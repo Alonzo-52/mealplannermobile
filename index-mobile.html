@@ -1,0 +1,2220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meal Planner — Mobile</title>
+  <style>
+    :root {
+      --bg: #fafaf8;
+      --surface: #ffffff;
+      --surface-hover: #f5f5f0;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --border: #e5e5e0;
+      --primary: #2d5a27;
+      --primary-hover: #1e3d1a;
+      --danger: #c0392b;
+      --tag-bg: #e8f0e8;
+      --tag-text: #2d5a27;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    [data-theme="dark"] {
+      --bg: #111110;
+      --surface: #1c1b1a;
+      --surface-hover: #252520;
+      --text: #e8e8e0;
+      --text-muted: #888;
+      --border: #333;
+      --primary: #6aab6a;
+      --primary-hover: #7ec47e;
+      --tag-bg: #1e2e1e;
+      --tag-text: #8fcf8f;
+      --shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 16px;
+      padding-bottom: 100px;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .header-right { display: flex; gap: 8px; align-items: center; }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--surface-hover); }
+    .btn-small { padding: 5px 10px; font-size: 0.8rem; }
+    .btn-icon { width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+
+    /* Theme toggle */
+    .theme-btn { font-size: 1.1rem; }
+
+    /* Nav tabs */
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+    }
+    .nav-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+      background: none;
+    }
+    .nav-tab.active { background: var(--primary); color: white; }
+
+    /* Views */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* Day cards */
+    .day-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .day-header {
+      background: var(--surface-hover);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .day-name { font-weight: 700; font-size: 0.95rem; }
+    .day-date { font-size: 0.8rem; color: var(--text-muted); }
+    .day-meals { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* Meal slot */
+    .meal-slot {
+      background: var(--bg);
+      border: 1.5px dashed var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      min-height: 64px;
+    }
+    .meal-slot:hover, .meal-slot:active { background: var(--surface-hover); }
+    .meal-slot.filled { border-style: solid; border-color: var(--primary); background: var(--tag-bg); }
+    .meal-slot-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .meal-slot-info { flex: 1; min-width: 0; }
+    .meal-slot-type { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; }
+    .meal-slot-name { font-size: 0.95rem; font-weight: 600; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meal-slot-empty { font-size: 0.85rem; color: var(--text-muted); font-style: italic; }
+    .meal-slot-arrow { color: var(--text-muted); font-size: 0.8rem; flex-shrink: 0; }
+    .meal-slot-remove {
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .meal-slot-remove:hover { background: var(--border); color: var(--text); }
+
+    /* Copy button */
+    .copy-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+      z-index: 50;
+    }
+    .copy-bar .btn { flex: 1; text-align: center; }
+
+    /* Staples */
+    .staples-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 20px;
+    }
+    .staples-section h3 { font-size: 0.85rem; font-weight: 600; margin-bottom: 10px; }
+    .staples-input-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .staples-input-row input {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+    }
+    .staples-input-row input:focus { border-color: var(--primary); }
+    .staples-list { display: flex; gap: 6px; flex-wrap: wrap; }
+    .staple-tag {
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+    .staple-tag:hover { opacity: 0.7; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-content {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 700px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px 20px 40px;
+    }
+    .modal-handle {
+      width: 40px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; }
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: var(--surface-hover);
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Recipe search */
+    .recipe-search {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      background: var(--bg);
+      color: var(--text);
+      margin-bottom: 12px;
+      outline: none;
+    }
+    .recipe-search:focus { border-color: var(--primary); }
+
+    /* Filter pills */
+    .filter-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .filter-pill {
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+    .filter-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* Recipe list */
+    .recipe-list { display: grid; gap: 8px; }
+    .recipe-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .recipe-card:hover, .recipe-card:active { background: var(--surface-hover); border-color: var(--primary); }
+    .recipe-card h3 { font-size: 0.95rem; font-weight: 600; color: var(--primary); margin-bottom: 4px; }
+    .recipe-card p { font-size: 0.8rem; color: var(--text-muted); }
+    .recipe-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+    .tag {
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* Recipe detail */
+    .detail-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .detail-meta a { color: var(--primary); }
+    .detail-ingredients h4,
+    .detail-method h4 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin: 16px 0 8px;
+    }
+    .detail-ingredients ul, .detail-method ol { padding-left: 20px; }
+    .detail-ingredients li, .detail-method li { font-size: 0.9rem; margin-bottom: 6px; line-height: 1.5; }
+    .detail-method li::marker { color: var(--primary); font-weight: bold; }
+
+    /* Shopping list */
+    .shopping-list-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .shopping-list-item:last-child { border-bottom: none; }
+    .shopping-list-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--primary); flex-shrink: 0; }
+    .shopping-list-item span { flex: 1; font-size: 0.9rem; }
+    .shopping-list-item.checked span { text-decoration: line-through; color: var(--text-muted); }
+    .shopping-list-item .qty { font-size: 0.8rem; color: var(--text-muted); min-width: 50px; text-align: right; }
+    .aisle-group { margin-bottom: 20px; }
+    .aisle-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .shopping-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--text);
+      color: var(--bg);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      opacity: 0;
+      transition: all 0.3s;
+      pointer-events: none;
+      z-index: 200;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (min-width: 600px) {
+      .container { max-width: 500px; margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>Meal Planner</h1>
+      <div class="header-right">
+        <button class="btn btn-secondary btn-icon theme-btn" onclick="toggleTheme()">🌓</button>
+      </div>
+    </header>
+
+    <!-- Nav tabs -->
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tab-week" onclick="showTab('week')">Week</button>
+      <button class="nav-tab" id="tab-shopping" onclick="showTab('shopping')">Shopping</button>
+    </div>
+
+    <!-- Week View -->
+    <div id="view-week" class="view active">
+      <div id="day-cards"></div>
+    </div>
+
+    <!-- Shopping View -->
+    <div id="view-shopping" class="view">
+      <div class="staples-section">
+        <h3>Staples</h3>
+        <div class="staples-input-row">
+          <input type="text" id="staple-input" placeholder="e.g. Oat milk" onkeydown="if(event.key==='Enter')addStaple()">
+          <button class="btn btn-primary btn-small" onclick="addStaple()">Add</button>
+        </div>
+        <div class="staples-list" id="staples-list"></div>
+      </div>
+      <div id="shopping-list"></div>
+    </div>
+
+  </div>
+
+  <!-- Recipe Selector Modal -->
+  <div class="modal-overlay" id="recipe-modal">
+    <div class="modal-content">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="modal-title">Add Recipe</div>
+      <input type="text" class="recipe-search" id="recipe-search" placeholder="Search recipes..." oninput="filterRecipes()" autocomplete="off">
+      <div class="filter-pills">
+        <button class="filter-pill active" onclick="setFilter('all')">All</button>
+        <button class="filter-pill" onclick="setFilter('vegetarian')">Veggie</button>
+        <button class="filter-pill" onclick="setFilter('quick')">Quick</button>
+        <button class="filter-pill" onclick="setFilter('meal-prep')">Meal Prep</button>
+      </div>
+      <div class="recipe-list" id="recipe-list"></div>
+    </div>
+  </div>
+
+  <!-- Recipe Detail Modal -->
+  <div class="modal-overlay" id="detail-modal">
+    <div class="modal-content">
+      <div class="modal-handle"></div>
+      <div id="recipe-detail-content"></div>
+    </div>
+  </div>
+
+  <!-- Copy bar (shopping view) -->
+  <div class="copy-bar" id="copy-bar" style="display:none">
+    <button class="btn btn-secondary" onclick="copyShoppingList()">📋 Copy List</button>
+    <button class="btn btn-primary" onclick="clearChecked()">Clear Checked</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+<script>
+// ─── Data (same 54 recipes) ───────────────────────────────
+const RECIPES = {
+'overnight-oats': {
+  name: 'Overnight Oats',
+  type: 'breakfast',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/overnight-oats',
+  tags: ['vegetarian', 'meal-prep'],
+  servings: 2,
+  ingredients: [
+    '100g rolled oats',
+    '200ml milk',
+    '150g Greek yogurt',
+    '2 tbsp honey',
+    '1 tbsp chia seeds',
+    '100g mixed berries'
+  ],
+  method: [
+    'Combine 100g rolled oats, 200ml milk, and 150g Greek yogurt in a bowl or jar — the milk and yogurt should fully coat the oats.',
+    'Stir in 2 tbsp honey and 1 tbsp chia seeds until evenly distributed. The chia seeds will absorb liquid and create a thick, creamy texture overnight.',
+    'Cover the bowl or jar tightly with cling film or a lid and refrigerate for at least 4 hours, preferably overnight. This resting time allows the oats to soften and the flavours to meld.',
+    'In the morning, remove from the fridge and stir well — the oats will have absorbed most of the liquid and the mixture should be thick and creamy.',
+    'Divide between two bowls and top each with 50g mixed berries. Serve immediately while cold, or take it straight from the jar for a quick grab-and-go breakfast.'
+  ]
+},
+'avocado-toast': {
+  name: 'Avocado Toast on Sourdough',
+  type: 'breakfast',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/avocado-toast',
+  tags: ['vegetarian', 'quick'],
+  servings: 2,
+  ingredients: [
+    '2 thick slices sourdough bread',
+    '1 ripe avocado',
+    'Squeeze of lemon juice',
+    'Pinch of chilli flakes',
+    'Salt and black pepper',
+    'Extra virgin olive oil'
+  ],
+  method: [
+    'Toast 2 thick slices of sourdough in a toaster or under a hot grill until the surface is golden brown and the bread has good structural rigidity — about 2-3 minutes per side.',
+    'Halve the avocado lengthwise by cutting around the stone, then twist the halves apart. Scoop the flesh into a bowl using a spoon, removing the stone carefully.',
+    'Mash the avocado with a fork, leaving some texture rather than making it completely smooth. Add a squeeze of lemon juice, a pinch of salt, and freshly ground black pepper to taste.',
+    'Spread the mashed avocado generously over the toast, ensuring it reaches all the corners. The lemon juice not only adds flavour but also helps prevent the avocado from browning.',
+    'Finish by dusting with a pinch of chilli flakes for a gentle warmth, and drizzle over a little extra virgin olive oil. Serve immediately while the toast is still warm.'
+  ]
+},
+'scrambled-eggs': {
+  name: 'Scrambled Eggs on Toast',
+  type: 'breakfast',
+  source: 'Jamie Oliver',
+  sourceUrl: 'https://www.jamieoliver.com/recipes/egg/scrambled-eggs-with-tomato-cheese-basil/',
+  tags: ['quick'],
+  servings: 2,
+  ingredients: [
+    '4 large eggs',
+    '20g butter',
+    '2 slices sourdough bread',
+    'Salt and white pepper',
+    'Fresh basil leaves (optional)'
+  ],
+  method: [
+    'Crack 4 large eggs directly into a cold non-stick pan — starting cold helps prevent the eggs from sticking and gives you more control over the curds.',
+    'Add 20g butter to the pan and place it over the lowest heat setting. As the pan warms up, the butter will gently melt and begin to coat the eggs.',
+    'Using a wooden spoon or spatula, stir the eggs continuously in slow, figure-eight motions, gathering the soft curds as they form. Keep the heat low — you want small, creamy curds, not large, dry ones.',
+    'Remove the pan from the heat when the eggs still look slightly wet and glossy — they will continue to cook in the residual heat for another 30 seconds. This is the key to perfectly creamy scrambled eggs.',
+    'Season with a pinch of salt and white pepper, then serve immediately on 2 slices of buttered toast. For a fancier touch, tear over a few fresh basil leaves.'
+  ]
+},
+'greek-yogurt-honey': {
+  name: 'Greek Yogurt with Honey & Walnuts',
+  type: 'breakfast',
+  source: 'NHS',
+  sourceUrl: 'https://www.nhs.uk/healthier-families/recipes/porridge/',
+  tags: ['vegetarian', 'quick'],
+  servings: 2,
+  ingredients: [
+    '300g Greek yogurt',
+    '2 tbsp honey',
+    '30g walnuts, roughly chopped',
+    'Pinch of cinnamon'
+  ],
+  method: [
+    'Divide 300g Greek yogurt evenly between two bowls, using a spoon to spread it slightly for a more inviting presentation.',
+    'Drizzle 2 tbsp honey over the yogurt in a slow, steady stream — use good-quality honey for the best flavour. Don\'t overmix; let the honey sit on the surface.',
+    'Scatter 30g roughly chopped walnuts across the top, ensuring an even distribution so every bite has some crunch. walnuts add healthy fats and a satisfying texture contrast to the smooth yogurt.',
+    'Finish with a pinch of cinnamon, dusting it lightly over the surface. Cinnamon adds warmth and depth without overpowering the natural sweetness of the honey. Serve immediately.'
+  ]
+},
+'banana-oat-pancakes': {
+  name: 'Banana Oat Pancakes',
+  type: 'breakfast',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/banana-oat-pancakes',
+  tags: ['vegetarian', 'quick'],
+  servings: 2,
+  ingredients: [
+    '2 ripe bananas',
+    '80g rolled oats',
+    '2 eggs',
+    '80ml milk',
+    '1 tsp baking powder',
+    'Pinch of salt',
+    'Butter for frying'
+  ],
+  method: [
+    'Peel 2 ripe bananas and place them in a blender with 80g rolled oats, 2 eggs, 80ml milk, 1 tsp baking powder, and a pinch of salt. Blend on high for 30-60 seconds until the batter is smooth and free of oat lumps.',
+    'Heat a non-stick pan over medium heat — wait until the pan feels warm when you hold your hand just above it. Add a small knob of butter and let it melt, tilting the pan to coat the base.',
+    'Pour small amounts of batter (about 2-3 tablespoons each) into the pan, leaving space between each pancake. The batter should spread slightly into round discs.',
+    'Cook for 2-3 minutes until bubbles appear on the surface and the edges look set. Flip each pancake carefully with a spatula and cook the other side for a further 1-2 minutes until golden.',
+    'Transfer to a plate and repeat with remaining batter, adding more butter between batches if needed. Serve stacked with a dollop of Greek yogurt and an extra drizzle of honey.'
+  ]
+},
+'full-english': {
+  name: 'Simplified Full English Breakfast',
+  type: 'breakfast',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/collection/family-breakfast-recipes/',
+  tags: [],
+  servings: 2,
+  ingredients: [
+    '4 eggs',
+    '4 rashers back bacon',
+    '2 sausages',
+    '2 slices bread',
+    '2 tomatoes, halved',
+    'Salt and pepper'
+  ],
+  method: [
+    'Preheat your grill to high, or heat a large frying pan over a medium-high heat. Arrange 4 rashers of back bacon and 2 sausages on the grill pan or in the pan.',
+    'Cook the bacon and sausages for 8-10 minutes, turning halfway through, until the bacon is crispy at the edges and the sausages are golden brown all over and cooked through — there should be no pink meat when you cut into one.',
+    'While the meat cooks, halve 2 tomatoes and place them cut-side up under the grill for the final 3-4 minutes of cooking. They should be warmed through and slightly collapsed.',
+    'In the same pan or a separate non-stick pan, fry 4 eggs in a little butter over medium heat. Cook to your preference — 2-3 minutes for a runny yolk, or longer if you prefer it set.',
+    'Toast 2 slices of bread and butter them lightly while still hot. Arrange all components on a warm plate, grouping the meats together and placing the fried eggs on top. Season with a pinch of salt and black pepper and serve immediately.'
+  ]
+},
+'bagel-salmon': {
+  name: 'Bagel with Cream Cheese & Smoked Salmon',
+  type: 'breakfast',
+  source: 'Great British Chefs',
+  sourceUrl: 'https://www.greatbritishchefs.com/recipes/bagel-with-cream-cheese-and-smoked-salmon-recipe',
+  tags: ['quick'],
+  servings: 2,
+  ingredients: [
+    '2 bagels, halved',
+    '100g cream cheese',
+    '100g smoked salmon',
+    'Capers to taste',
+    'Fresh dill',
+    'Lemon wedge'
+  ],
+  method: [
+    'Slice 2 bagels in half horizontally and place them cut-side down in a toaster or under a grill for 2-3 minutes until the surfaces are golden and the bread is warmed through.',
+    'Place 100g cream cheese in a small bowl and beat it briefly with a spoon to soften it slightly, making it easier to spread. This also helps it coat the bagel more evenly.',
+    'Spread the cream cheese generously over the cut face of each bagel half, using the back of the spoon to create a thick, even layer. Don\'t be shy — a proper amount of cream cheese is key to a satisfying bagel.',
+    'Lay 100g smoked salmon over the cream cheese, draping the slices so they follow the curve of the bagel. The salmon should cover most of the surface.',
+    'Scatter a small handful of capers across the salmon, then tuck a few fresh dill sprigs in beside the fish. Finally, cut a lemon wedge and squeeze a little juice over the top — the acid brightens the rich salmon beautifully.'
+  ]
+},
+'smoothie-bowl': {
+  name: 'Berry Smoothie Bowl',
+  type: 'breakfast',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/berry-smoothie-bowl',
+  tags: ['vegetarian', 'quick'],
+  servings: 2,
+  ingredients: [
+    '200g frozen mixed berries',
+    '1 banana',
+    '150g Greek yogurt',
+    '50ml milk',
+    '40g granola',
+    '1 tbsp honey'
+  ],
+  method: [
+    'Place 200g frozen mixed berries, 1 peeled banana, 150g Greek yogurt, and 50ml milk into a blender. Blend on high speed for 60-90 seconds until the mixture is thick, smooth, and uniform in colour — it should be a pourable but not watery consistency.',
+    'Taste and adjust sweetness if needed. If the berries are particularly tart, you can add a touch more banana or a drizzle of honey. If too thick, add milk one tablespoon at a time.',
+    'Pour the smoothie mixture evenly into two chilled bowls — chilling the bowls beforehand helps keep the smoothie thick and prevents it from warming and melting the granola too quickly.',
+    'Sprinkle 40g granola across the surface in an even layer, then drizzle 1 tbsp honey over the top in a zigzag pattern for a decorative finish. Serve immediately for the best texture contrast between the cold smoothie and crunchy granola.'
+  ]
+},
+'bacon-sandwich': {
+  name: 'Bacon Sandwich',
+  type: 'breakfast',
+  source: 'Jamie Oliver',
+  sourceUrl: 'https://www.jamieoliver.com/recipes/pork/best-bacon-sandwich/',
+  tags: ['quick'],
+  servings: 2,
+  ingredients: [
+    '4 rashers smoked bacon',
+    '2 slices white or brown bread',
+    'Tomato ketchup',
+    'Butter'
+  ],
+  method: [
+    'Cook 4 rashers of smoked bacon in a cold non-stick pan over a medium heat — starting cold helps the fat render out slowly, keeping the bacon crispy rather than chewy.',
+    'After 3-4 minutes, flip the bacon rashers and cook the other side for the same amount of time until both sides are deep golden and the bacon is crispy throughout. Transfer to a plate lined with kitchen paper.',
+    'Toast 2 slices of white or brown bread in a toaster until golden. While still hot, butter one side of each slice lightly — the heat from the toast will help the butter melt and spread evenly.',
+    'Spread a generous layer of tomato ketchup on the unbuttered side of one slice of toast, then layer the crispy bacon rashers on top, cutting them in half if needed to fit neatly.',
+    'Place the second slice of toast on top, buttered-side facing up, to create a sandwich. Press down gently, then cut diagonally if desired. Serve immediately while the bacon is still hot and crispy.'
+  ]
+},
+'porridge-honey': {
+  name: 'Porridge with Honey & Seeds',
+  type: 'breakfast',
+  source: 'NHS',
+  sourceUrl: 'https://www.nhs.uk/healthier-families/recipes/porridge/',
+  tags: ['vegetarian', 'meal-prep'],
+  servings: 2,
+  ingredients: [
+    '160g porridge oats',
+    '600ml milk or water',
+    '2 tbsp honey',
+    '1 tbsp mixed seeds (chia, linseed, sunflower)',
+    'Pinch of salt'
+  ],
+  method: [
+    'Combine 160g porridge oats, 600ml milk or water (or a mixture of both for creamier porridge), and a pinch of salt in a pan — using a heavy-based pan helps distribute the heat evenly and prevents sticking.',
+    'Place over a medium heat and bring to a gentle simmer, stirring regularly with a wooden spoon to prevent the oats from catching on the bottom of the pan.',
+    'Cook for 5 minutes, continuing to stir every 30-60 seconds. The porridge is ready when it has a thick, creamy consistency and the oats are completely tender but not mushy.',
+    'Remove from the heat and stir in 2 tbsp honey until fully incorporated. Taste and adjust sweetness to your preference — different honeys will give different levels of floral sweetness.',
+    'Divide the porridge between two warm bowls. To serve, sprinkle 1 tbsp mixed seeds (chia, linseed, sunflower) across the top — the seeds add a pleasant nutty crunch and boost the nutritional profile. Serve immediately while hot.'
+  ]
+},
+'crab-salad': {
+  name: 'Crab Salad with Fennel & Samphire',
+  type: 'lunch',
+  source: 'Rick Stein',
+  sourceUrl: 'https://www.bbc.com/food/recipes/crab_salad_with_fennel_02453',
+  tags: ['seafood', 'elegant', 'light'],
+  servings: 2,
+  ingredients: [
+    '200g fresh white crab meat',
+    '1 small fennel bulb, finely shaved',
+    '50g samphire',
+    'Lemon juice',
+    '2 tbsp olive oil',
+    'Small handful of dill',
+    'Salt and pepper'
+  ],
+  method: [
+    'Bring a small pan of water to a rolling boil. Add 50g samphire (sea asparagus) and blanch for exactly 1 minute — do not overcook, as samphire should retain a slight snap and vibrant green colour.',
+    'While the samphire is cooking, prepare a bowl of ice water. Drain the samphire and immediately plunge it into the ice water to stop the cooking process and preserve its bright colour and firm texture.',
+    'In a mixing bowl, combine 200g fresh white crab meat with 2 tbsp olive oil, a squeeze of lemon juice, and a pinch of salt and freshly ground black pepper. Toss gently to coat — the crab meat is delicate, so handle it carefully to keep the chunks intact.',
+    'Arrange the finely shaved fennel on two plates, creating a bed of overlapping fronds. The fennel should be sliced paper-thin so it is tender and adds a refreshing aniseedy crunch.',
+    'Spoon the crab mixture over the fennel, then scatter the drained samphire across the top. Finish with a small handful of fresh dill sprigs and a final squeeze of lemon juice. Serve immediately.'
+  ]
+},
+'spicy-sausage-beans': {
+  name: 'Spicy Sausage Beans on Toast',
+  type: 'lunch',
+  source: 'Delia Online',
+  sourceUrl: 'https://www.deliaonline.com/recipes/sam-holland-spicy-sausage-beans-on-toast',
+  tags: ['hearty', 'spicy', 'satisfying'],
+  servings: 2,
+  ingredients: [
+    '4 pork sausages',
+    '400g can baked beans',
+    '1 tsp hot chilli sauce',
+    '2 slices toast',
+    '1 tbsp vegetable oil'
+  ],
+   method: [
+    'Heat 1 tbsp vegetable oil in a large frying pan over a medium-high heat until the oil shimmers and flows easily across the pan. This is the right temperature for browning.',
+    'Add 4 pork sausages to the pan and cook for 8-10 minutes, turning regularly, until they are evenly browned on all sides and cooked through — when you press one gently, the juices should run clear with no pink.',
+    'Remove the sausages and slice them into rounds about 1cm thick. Return the sliced sausages to the pan, keeping the heat at medium.',
+    'Pour in 400g canned baked beans and add 1 tsp hot chilli sauce (adjust to taste). Stir everything together and simmer for 5 minutes until the sauce is warmed through and slightly thickened.',
+    'Toast 2 slices of bread in a toaster or under the grill until golden. Place the toast on two plates, then spoon the sausage and bean mixture generously over the top. Serve immediately while piping hot.'
+  ]
+},
+'nduja-bruschetta': {
+  name: "'Nduja Bruschetta",
+  type: 'lunch',
+  source: 'Great British Chefs',
+  sourceUrl: 'https://www.greatbritishchefs.com/recipes/nduja-bruschetta-recipe',
+  tags: ['spicy', 'Italian'],
+  servings: 2,
+  ingredients: [
+    '2 thick slices sourdough',
+    "60g nduja sausage",
+    '2 ripe tomatoes, roughly chopped',
+    'Extra virgin olive oil',
+    'Fresh basil'
+  ],
+  method: [
+    "Toast 2 thick slices of sourdough in a toaster or under the grill for 2-3 minutes per side until the crust is golden and the interior is warm and yielding.",
+    "Place 60g nduja sausage in a cold pan and set it over a medium heat. As the pan warms up, the fat from the nduja will slowly render out — this spicy, spreadable sausage will dissolve into a rich, fiery red paste.",
+    "Cook for 3-4 minutes, stirring occasionally, until the nduja has fully melted into a thick, fragrant sauce and the oil is stained a deep orange-red. The aroma should be smoky and spicy.",
+    "Add 2 roughly chopped ripe tomatoes to the pan and cook for 2-3 minutes, pressing them gently with a spoon until they collapse slightly and release their juices into the nduja sauce.",
+    "Remove the toast from the toaster and place the slices on two plates. Spoon the hot nduja and tomato mixture generously over each slice, making sure to include the rendered fat and any pan juices.",
+    "Tear a few fresh basil leaves and scatter them over the top for a fragrant, peppery finish. Serve immediately while the toast is still crisp at the edges."
+  ]
+},
+'jamie-pasta-salad': {
+  name: 'Quick Pasta Salad',
+  type: 'lunch',
+  source: 'Jamie Oliver',
+  sourceUrl: 'https://www.jamieoliver.com/recipes/pasta/quick-and-easy-pasta-salad',
+  tags: ['vegetarian', 'meal-prep', 'quick'],
+  servings: 2,
+  ingredients: [
+    '200g pasta (penne or fusilli)',
+    '100g cherry tomatoes, halved',
+    '80g feta cheese, crumbled',
+    '30g black olives',
+    '3 tbsp olive oil',
+    'Juice of 1 lemon',
+    'Salt and pepper'
+  ],
+  method: [
+    'Bring a large pan of generously salted water to a rolling boil — the water should taste pleasantly salty, like a mild sea. Add 200g pasta (penne or fusilli work well for salads) and cook according to the packet instructions, usually 10-12 minutes.',
+    'While the pasta cooks, prepare the dressing: whisk 3 tbsp olive oil with the juice of 1 lemon in a large bowl until combined and slightly emulsified. Season generously with salt and pepper.',
+    'When the pasta is cooked to al dente (tender but with a slight bite), drain it immediately and rinse under cold running water to stop the cooking process and cool it down quickly — this prevents the pasta from becoming soggy.',
+    'Add the drained pasta to the bowl with the dressing and toss well, ensuring every piece of pasta is lightly coated. The lemon acid will brighten the flavours.',
+    'Add 100g halved cherry tomatoes, 80g crumbled feta cheese, and 30g black olives. Toss everything together gently so the feta doesn\'t break up too much.',
+    'Taste and adjust seasoning — the salad may need a pinch more salt, lemon juice, or olive oil. Serve at room temperature for the best flavour, or refrigerate and serve cold. This salad keeps well for up to 24 hours.'
+  ]
+},
+'coronation-chicken': {
+  name: 'Coronation Chicken Wrap',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/6080/instant-coronation-chicken',
+  tags: [],
+  servings: 2,
+  ingredients: [
+    '300g cooked chicken breast, shredded',
+    '4 tbsp coronation sauce',
+    '2 large tortilla wraps',
+    'Handful of lettuce',
+    '1 spring onion, sliced'
+  ],
+  method: [
+    'Shred 300g cooked chicken breast into bite-sized pieces — pulling it apart with two forks gives a nicer texture than cutting, as the fibres stay more intact.',
+    'Place the chicken in a bowl and add 4 tbsp coronation sauce (or madras curry sauce for a milder flavour). Stir until the chicken is thoroughly coated in the sauce. If the sauce is thick, add a teaspoon of water to loosen it slightly.',
+    'Warm 2 large tortilla wraps in a dry frying pan over a medium heat for 30 seconds on each side, or in a microwave for 20-30 seconds — this makes them more pliable and easier to roll without splitting.',
+    'Lay each tortilla flat and place a few lettuce leaves in the centre, creating a bed for the chicken. Spoon the coronation chicken mixture over the lettuce, distributing it evenly.',
+    'Add a few slices of spring onion over the top for a sharp, fresh bite. To roll, fold the bottom of the tortilla up over the filling, then fold in the sides, and roll the whole thing tightly upward into a tight cylinder.',
+    'Cut each wrap diagonally in half on a bias for a more attractive presentation. Serve immediately, or wrap in foil to eat on the go.'
+  ]
+},
+'tomato-soup': {
+  name: 'Tomato Soup with Cheese Toast',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/tomato-soup',
+  tags: ['vegetarian', 'meal-prep'],
+  servings: 2,
+  ingredients: [
+    '800g tinned chopped tomatoes',
+    '1 onion, diced',
+    '2 garlic cloves',
+    '500ml vegetable stock',
+    '2 tbsp olive oil',
+    '2 slices bread',
+    '40g cheddar, grated'
+  ],
+  method: [
+    'Heat 2 tbsp olive oil in a large pan over a medium heat. Add 1 diced onion and 2 crushed garlic cloves, then cook, stirring occasionally, for 8-10 minutes until the onion is completely softened, translucent, and starting to turn pale golden at the edges.',
+    'Add 800g canned chopped tomatoes to the pan, breaking them up with a wooden spoon. Pour in 500ml vegetable stock and stir to combine. Bring to a gentle simmer.',
+    'Cook the soup, partially covered, for 15 minutes, stirring occasionally. The surface should bubble lazily — not vigorously. This slow cooking concentrates the tomato flavour and melds the aromatics.',
+    'Use a stick blender or transfer to a blender to blend until completely smooth. Season generously with salt and pepper, tasting carefully as you go — tinned tomatoes can vary in saltiness. Add more stock if the soup is too thick.',
+    'For the cheese toast: place 2 slices of bread on a grill rack, top each with a generous handful of grated cheddar, and grill under a high heat for 3-4 minutes until the cheese is bubbling, golden, and has formed a slight crust at the edges.',
+    'Ladle the hot soup into two deep bowls and place the cheese toast alongside or float half a cheese toast in each bowl. The contrast of hot soup and molten cheese is exceptional.'
+  ]
+},
+'chicken-caesar': {
+  name: 'Chicken Caesar Salad',
+  type: 'lunch',
+  source: 'Jamie Oliver',
+  sourceUrl: 'https://www.jamieoliver.com/recipes/chicken/ultimate-roast-chicken-caesar-salad/',
+  tags: [],
+  servings: 2,
+  ingredients: [
+    '2 chicken breasts',
+    '2 Little Gem lettuces',
+    '40g parmesan, shaved',
+    '4 tbsp Caesar dressing',
+    '30g breadcrumbs',
+    '2 rashers bacon'
+  ],
+  method: [
+    'Season 2 chicken breasts with a pinch of salt and pepper. Place under a hot grill or in a griddle pan over medium-high heat. Cook for 10-12 minutes, turning once halfway through, until the chicken is cooked through — the juices should run completely clear with no pink, and the surface should have caramelised grill marks.',
+    'While the chicken cooks, place 2 rashers of streaky bacon in a cold non-stick pan and set over a medium-high heat. Cook for 4-5 minutes, turning regularly, until the bacon is crispy and golden on both sides. Transfer to a plate lined with kitchen paper.',
+    'Once the chicken is cooked, remove it from the grill and let it rest for 2-3 minutes — this allows the juices to redistribute, keeping the meat moist. Then slice it on a bias into thin strips.',
+    'Crumble the crispy bacon rashers into rough pieces. Prepare 2 Little Gem lettuces by separating the leaves and washing them thoroughly in cold water, then drying in a salad spinner or by patting with kitchen paper.',
+    'Place the lettuce leaves in a large bowl and drizzle 4 tbsp Caesar dressing over them. Toss gently to coat each leaf without making the salad soggy.',
+    'Divide the dressed lettuce between two plates or bowls. Arrange the sliced chicken on top, then scatter the crispy bacon pieces and 40g shaved parmesan over the surface. Serve immediately.'
+  ]
+},
+'egg-mayo-sandwich': {
+  name: 'Egg Mayonnaise Sandwich',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/egg-mayonnaise-sandwich',
+  tags: ['vegetarian', 'quick'],
+  servings: 2,
+  ingredients: [
+    '4 hard-boiled eggs',
+    '3 tbsp mayonnaise',
+    '2 leaves lettuce',
+    '4 slices bread',
+    'Salt and pepper',
+    'Curry powder (optional)'
+  ],
+  method: [
+    'Place 4 hard-boiled eggs in a saucepan of cold water, bring to the boil, then remove from the heat and cover for exactly 10 minutes. Transfer to a bowl of cold water and let sit for 5 minutes before peeling — this prevents the yolks from greying and makes the shells slip off more easily.',
+    'Once peeled, chop the eggs into rough pieces — aim for chunks of roughly 1cm, not a fine mash. Some texture is desirable here, as is a contrast of sizes.',
+    'Place the chopped eggs in a bowl and add 3 tbsp mayonnaise, mixing gently until the egg is coated but not drowning in it. Season with salt and freshly ground black pepper, tasting as you season.',
+    'For an optional flavour twist, add a pinch of curry powder — just 1/4 tsp is enough to add warmth without making it taste overtly of curry. This is a classic British touch that elevates a simple egg mayo into something more interesting.',
+    'Lay 2 leaves of lettuce on two slices of bread, then spread the egg mayonnaise generously over the lettuce, reaching to the edges. Place the second slice of bread on top.',
+    'Cut each sandwich diagonally in half or into fingers, and press gently before serving. Best eaten on the day of making — egg mayonnaise sandwiches do not keep well.'
+  ]
+},
+'pasta-salad': {
+  name: 'Mediterranean Pasta Salad',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/mediterranean-pasta-salad',
+  tags: ['vegetarian', 'meal-prep'],
+  servings: 2,
+  ingredients: [
+    '200g pasta',
+    '80g sun-dried tomatoes, chopped',
+    '100g mozzarella balls',
+    '50g basil pesto',
+    '2 tbsp olive oil',
+    'Salt and pepper'
+  ],
+  method: [
+    'Bring a large pan of salted water to a rolling boil and cook 200g pasta according to the packet instructions, usually 10-12 minutes for penne or fusilli. Drain thoroughly and spread it out on a clean tray or plate to cool — spreading it out prevents the pasta from steaming and becoming sticky.',
+    'While the pasta cools, prepare the pesto dressing: place 50g basil pesto in a bowl and stir in 2 tbsp olive oil to loosen it slightly, making it easier to coat the pasta evenly.',
+    'Once the pasta is cool (but still slightly warm is fine), transfer it to a large bowl. Pour the pesto and olive oil mixture over the top and toss thoroughly, ensuring every piece of pasta is glisteningly coated.',
+    'Add 80g chopped sun-dried tomatoes and 100g mozzarella balls (halved if large). The mozzarella should be room temperature for the best texture — soft and slightly squeaky.',
+    'Toss again gently — the mozzarella balls are delicate and can break apart if stirred too vigorously. Season with salt and pepper to taste. If the salad seems dry, add another drizzle of olive oil.',
+    'Serve immediately at room temperature, or cover and refrigerate for up to 24 hours. This pasta salad actually improves after an hour or two as the flavours meld together.'
+  ]
+},
+'houmous-flatbread': {
+  name: 'Houmous & Veggie Flatbread',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/houmous-and-veggie-flatbread',
+  tags: ['vegan', 'quick'],
+  servings: 2,
+  ingredients: [
+    '2 flatbreads',
+    '150g houmous',
+    '1 cucumber, sliced',
+    '1 pepper, sliced',
+    'Handful of cherry tomatoes',
+    'Olive oil and paprika'
+  ],
+  method: [
+    'Heat a dry frying pan over a medium heat (or heat your oven to 180°C). Place 2 flatbreads in the pan for 1-2 minutes per side until warmed through and slightly charred at the edges — they should be pliable and hot throughout.',
+    'Alternatively, wrap the flatbreads in foil and warm in the oven for 5-8 minutes. This method is gentler and produces less charring, which some people prefer.',
+    'Place each flatbread on a plate or board. Spread 150g houmous generously over the surface, using the back of a spoon to create a thin but even layer — you want houmous on every bite.',
+    'Arrange 1 sliced cucumber, 1 sliced pepper, and a handful of cherry tomatoes over the houmous in an even layer. The vegetables should be roughly distributed so every forkful gets a mix.',
+    'Drizzle a little extra virgin olive oil over the top in a thin stream, then dust lightly with paprika — a very small amount goes a long way, so use restraint. Serve immediately while the flatbreads are still warm and pliable.'
+  ]
+},
+'prawn-sandwich': {
+  name: 'Prawn Marie Rose Sandwich',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/prawn-marie-rose-sandwich',
+  tags: ['quick'],
+  servings: 2,
+  ingredients: [
+    '200g cooked prawns',
+    '3 tbsp Marie Rose sauce',
+    '2 brioche buns',
+    'Little gem lettuce',
+    'Lemon wedge'
+  ],
+  method: [
+    'Place 200g cooked prawns in a bowl and add 3 tbsp Marie Rose sauce (a classic British sauce of mayonnaise blended with tomato ketchup and Worcestershire sauce). Stir gently until the prawns are evenly coated.',
+    'If you don\'t have Marie Rose sauce, mix 2 tbsp good-quality mayonnaise with 1 tbsp tomato ketchup and a few drops of Worcestershire sauce until combined. This homemade version is just as good.',
+    'Slice 2 brioche buns in half horizontally. Place them cut-side down in a toaster or under a grill for 1-2 minutes until the surfaces are lightly golden and warmed through.',
+    'Place a few Little Gem lettuce leaves on the bottom half of each brioche bun. Spoon the prawn and Marie Rose mixture on top, dividing evenly between the four halves.',
+    'Cut a lemon wedge and squeeze a little juice directly over the prawns — the citrus brightens the richness of the sauce and prawns beautifully. Place the brioche tops on and serve immediately.'
+  ]
+},
+'lentil-soup': {
+  name: 'Lentil Soup',
+  type: 'lunch',
+  source: 'NHS',
+  sourceUrl: 'https://www.nhs.uk/healthier-families/recipes/vegetable-and-lentil-soup/',
+  tags: ['vegan', 'meal-prep'],
+  servings: 2,
+  ingredients: [
+    '200g red lentils',
+    '1 carrot, diced',
+    '1 celery stalk, diced',
+    '1 onion, diced',
+    '1 litre vegetable stock',
+    '1 tsp cumin',
+    '2 tbsp olive oil'
+  ],
+  method: [
+    'Heat 2 tbsp olive oil in a large, heavy-bottomed pan over a medium heat. Add 1 diced onion, 1 diced carrot, and 1 diced celery stalk — this mixture of vegetables is called a mirepoix and forms the flavour base.',
+    'Cook the vegetables, stirring occasionally, for 5-7 minutes until the onion is softened and translucent, and the carrot and celery have begun to soften at the edges. Don\'t let them brown.',
+    'Add 200g red lentils (rinsed under cold water until the water runs clear), 1 litre vegetable stock, and 1 tsp cumin. Stir well to combine and bring to a gentle simmer over medium heat.',
+    'Partially cover the pan and simmer for 20 minutes, stirring occasionally, until the lentils are completely soft and beginning to break down — they should look creamy and thick. If the soup is too thick, add more stock or water.',
+    'For a creamy yet textured consistency, ladle out about half the soup into a blender or use a stick blender to blend just that portion until smooth, then stir it back in. Alternatively, blend completely for a fully smooth soup.',
+    'Taste and season generously with salt and pepper. Ladle into bowls and serve with a swirl of olive oil drizzled on top and a chunk of crusty bread for scooping.'
+  ]
+},
+'caprese-salad': {
+  name: 'Caprese Salad',
+  type: 'lunch',
+  source: 'Jamie Oliver',
+  sourceUrl: 'https://www.jamieoliver.com/recipes/vegetarian/rustic-caprese-salad/',
+  tags: ['vegetarian', 'quick', 'no-cook'],
+  servings: 2,
+  ingredients: [
+    '2 large ripe tomatoes',
+    '125g buffalo mozzarella',
+    'Fresh basil leaves',
+    '3 tbsp extra virgin olive oil',
+    'Balsamic glaze',
+    'Salt and pepper'
+  ],
+  method: [
+    'Select 2 large, ripe tomatoes — they should feel heavy for their size and give slightly when pressed gently. Rinse them and pat dry. Place them on a chopping board and slice horizontally into rounds about 5mm thick.',
+    'Drain 125g buffalo mozzarella and pat it dry with kitchen paper. Slice the mozzarella into rounds of similar thickness to the tomatoes — slightly thicker is fine, as mozzarella is more delicate.',
+    'On a large serving plate, arrange the tomato and mozzarella slices in an alternating pattern, overlapping them slightly like a mosaic. Rotate the plate occasionally to ensure even presentation.',
+    'Tuck fresh basil leaves between and around the slices — tear any large leaves rather than cutting them, as tearing produces less bruising and releases less of the oils.',
+    'Drizzle 3 tbsp extra virgin olive oil generously over the entire arrangement, letting it pool between the slices. Follow with a zigzag drizzle of balsamic glaze — go easy, as balsamic can overwhelm the other flavours.',
+    'Season with a pinch of flaky sea salt and freshly ground black pepper. Serve immediately at room temperature — this dish loses its appeal if refrigerated, as the tomatoes become watery and the mozzarella toughens.'
+  ]
+},
+'congee-soy-eggs': {
+  name: 'Congee with Soy Eggs',
+  type: 'breakfast',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/congee-soy-eggs',
+  tags: ['chinese', 'comfort', 'weekend'],
+  servings: 2,
+  ingredients: [
+    '150g jasmine rice',
+    '1 litre chicken stock',
+    '2 eggs',
+    '2 tbsp light soy sauce',
+    '1 tsp sesame oil',
+    '2cm piece of ginger, grated',
+    '2 spring onions, sliced'
+  ],
+  method: [
+    'Place 150g jasmine rice and 1 litre chicken stock in a large pan and set over a medium-high heat. Bring to a gentle boil, then reduce the heat to low — the surface should barely shimmer.',
+    'Cook the congee on a low simmer, partially covered, for 45 minutes, stirring every 5-10 minutes with a wooden spoon. The rice grains will gradually burst and release their starch, turning the liquid into a smooth, creamy porridge.',
+    'While the congee cooks, prepare the soy eggs: bring a small pan of water to the boil, carefully lower in 2 eggs, and cook for exactly 6 minutes for a soft-boiled egg with a runny yolk. Immediately transfer to a bowl of ice water for 1 minute to stop cooking.',
+    'Peel the soft-boiled eggs and halve them carefully — the yolks should be bright orange and jammy, not chalky or fully set. Set aside.',
+    'Stir 2 tbsp light soy sauce and 1 tsp grated fresh ginger into the finished congee. The congee should be smooth and creamy with no visible rice grains — if yours still has whole grains, cook for another 5-10 minutes.',
+    'Ladle the hot congee into bowls and place 2 egg halves on top. Drizzle over 1 tsp sesame oil and scatter 2 sliced spring onions across the surface. Serve immediately.'
+  ]
+},
+'delicious-fried-rice': {
+  name: 'Delicious Fried Rice',
+  type: 'lunch',
+  source: 'BBC Food',
+  sourceUrl: 'https://www.bbc.co.uk/food/recipes/deliciousfriedrice_72056',
+  tags: ['chinese', 'wok', 'comfort'],
+  servings: 2,
+  ingredients: [
+    '300g cooked rice, day-old',
+    '3 eggs, beaten',
+    '80g frozen peas',
+    '3 spring onions, sliced',
+    '2 tbsp soy sauce',
+    '1 tbsp vegetable oil',
+    'Salt to taste'
+  ],
+  method: [
+    'Set a wok or large frying pan over the highest heat your stove can produce — the wok should be smoking slightly before you add any oil. This intense heat is essential for the characteristic smoky flavour of fried rice.',
+    'Add 1 tbsp vegetable oil and let it heat for 30 seconds until it flows easily across the pan. Pour in 3 beaten eggs and immediately stir them vigorously with a spatula, breaking them up into small irregular curds. Remove the eggs with a slotted spoon and set aside.',
+    'Add the day-old cooked rice to the wok — cold, dry rice is essential as fresh rice will turn soggy and mushy. Stir-fry over the highest heat for 3-4 minutes, pressing the rice against the wok surface to develop some colour and char.',
+    'Add 80g frozen peas (no need to thaw them — they\'ll defrost quickly in the hot wok) and 2 tbsp soy sauce. Toss everything together for 1-2 minutes until the peas are heated through and the sauce is evenly distributed.',
+    'Return the scrambled eggs to the wok along with 3 sliced spring onions. Toss the entire mixture together for another 30 seconds, mixing everything until uniform. Taste and add salt if needed — soy sauce varies in saltiness.',
+    'Serve immediately directly from the wok while piping hot. Fried rice waits for no one — the residual heat will continue cooking the eggs if left to sit.'
+  ]
+},
+'spicy-moroccan-eggs': {
+  name: 'Spicy Moroccan Eggs',
+  type: 'breakfast',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/spicy-moroccan-eggs/',
+  tags: ['moroccan', 'african', 'spicy', 'vegetarian'],
+  servings: 2,
+  ingredients: [
+    '4 eggs',
+    '400g tinned tomatoes',
+    '1 tsp harissa paste',
+    '1 tsp cumin',
+    '1 tsp paprika',
+    '400g can chickpeas, drained',
+    'Fresh coriander',
+    '2 tbsp olive oil'
+  ],
+  method: [
+    'Heat 2 tbsp olive oil in a large, wide pan over a medium heat. Add 1 tsp cumin, 1 tsp paprika, and 1 tsp harissa paste — watch the pan carefully for 1 minute as the spices bloom and become fragrant and toasty. This step is crucial — bloomed spices have a depth that raw spices simply cannot match.',
+    'Pour in 400g canned chopped tomatoes and add 400g canned chickpeas (drained and rinsed). Stir everything together and bring to a gentle simmer over medium heat.',
+    'Simmer the sauce, partially covered, for 10 minutes, stirring occasionally. The sauce should thicken and the flavours will concentrate. Taste and adjust seasoning — it may need a pinch more salt or harissa for heat.',
+    'Make 4 wells in the sauce by pressing the back of a spoon into the mixture. Crack 1 egg into each well — the whites should spread into the sauce while the yolks sit proud. This is the defining visual of the dish.',
+    'Cover the pan with a lid or a sheet of foil and cook on a low heat for 5-7 minutes. Check by gently shaking the pan — the whites should be fully set (opaque and firm to the touch) while the yolks should still jiggle when the pan is moved.',
+    'Remove from the heat and tear fresh coriander leaves generously across the surface. Serve immediately straight from the pan with warm flatbreads for scooping up the sauce and runny yolks.'
+  ]
+},
+'lablabi': {
+  name: 'Lablabi (Tunisian Chickpea Breakfast)',
+  type: 'breakfast',
+  source: 'BBC Food',
+  sourceUrl: 'https://bbc.com/food/recipes/tunisian_breakfast_82449',
+  tags: ['tunisian', 'african', 'protein', 'chickpea'],
+  servings: 2,
+  ingredients: [
+    '400g can chickpeas',
+    '4 garlic cloves, minced',
+    '1 tsp cumin',
+    '1 tbsp harissa',
+    '4 eggs',
+    '4 slices bread',
+    'Lemon juice',
+    'Olive oil'
+  ],
+  method: [
+    'Pour 400g canned chickpeas (including the liquid from the can, called aquafaba) into a saucepan. Add 4 minced garlic cloves, 1 tsp ground cumin, and 1 tbsp harissa paste — the aquafaba makes a natural, starchy broth that is integral to the dish.',
+    'Place over a medium heat and bring to a gentle simmer, stirring occasionally. Cook for 8-10 minutes until the broth is heated through and the garlic has softened — don\'t boil vigorously or the chickpeas will become mushy.',
+    'Use a fork or the back of a spoon to mash some of the chickpeas against the side of the pan, deliberately breaking open about a third of them. This thickens the broth into a more porridge-like consistency and releases more starch.',
+    'Bring the mixture to a low, steady simmer. Crack 4 eggs directly into the chickpea mixture, spacing them evenly. Cover the pan with a lid and cook for 5-7 minutes — the whites should be opaque and just set while the yolks remain runny.',
+    'While the eggs cook, toast 4 slices of bread. For authentic presentation, place the toast in the bottom of each bowl before ladling over the chickpea and egg mixture.',
+    'Squeeze the juice of 1 lemon over the top and drizzle with olive oil. Serve in bowls, making sure each person gets one egg and plenty of the spiced chickpea broth. Eat with a spoon, dipping the toast into the runny yolk and broth.'
+  ]
+},
+'gallo-pinto': {
+  name: 'Gallo Pinto',
+  type: 'breakfast',
+  source: 'Jamie Oliver',
+  sourceUrl: 'https://jamieoliver.com/recipes/eggs/gallo-pinto',
+  tags: ['costa-rican', 'central-american', 'beans', 'eggs'],
+  servings: 2,
+  ingredients: [
+    '200g cooked black beans',
+    '200g cooked rice',
+    '2 eggs',
+    '1 onion, diced',
+    '1 tbsp Lizano sauce (or Worcestershire)',
+    '1 tbsp olive oil',
+    'Salt and pepper'
+  ],
+  method: [
+    'Heat 1 tbsp vegetable oil in a large, wide pan over a medium heat. Add 1 diced onion and cook, stirring regularly, for 7-8 minutes until the onion is completely softened and turning pale golden at the edges — resist the urge to rush this step, as caramelised onion is the flavour backbone of the dish.',
+    'Add 200g cooked black beans (drained and rinsed) and 200g cooked rice to the pan. Stir everything together with a spatula, breaking up any clumps of rice, and cook for 3-4 minutes until everything is heated through.',
+    'Stir in 1 tbsp Lizano sauce (Costa Rican condiment, or substitute with Worcestershire sauce combined with a pinch of sugar) and season with salt and pepper. Cook for another 2 minutes, allowing the sauce to coat everything evenly.',
+    'While the gallo pinto is cooking, heat a small non-stick pan over a medium heat with a little oil. Crack 2 eggs into the pan and cook to your preference — a sunny-side up with a runny yolk is the traditional choice, as the yolk mixes into the rice when stirred.',
+    'Divide the hot gallo pinto between two plates or wide bowls. Carefully place 1 fried egg on top of each portion, allowing the yolk to sit in the centre. Serve immediately while everything is hot.'
+  ]
+},
+'ackee-saltfish': {
+  name: 'Ackee & Saltfish',
+  type: 'breakfast',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/ackee-saltfish',
+  tags: ['jamaican', 'caribbean', 'classic', 'fish'],
+  servings: 2,
+  ingredients: [
+    '200g saltfish (salted cod), soaked overnight',
+    '200g tinned ackee',
+    '1 onion, sliced',
+    '1 pepper, sliced',
+    '2 tbsp vegetable oil',
+    'Black pepper',
+    'Fresh thyme'
+  ],
+  method: [
+    'Place 200g saltfish (salted cod) in a bowl of cold water and soak overnight, changing the water at least twice. This soaking is essential — it draws out the excess salt and rehydrates the fish. If short on time, soak in warm water for 2 hours, changing the water every 30 minutes.',
+    'Drain the soaked saltfish and place it in a saucepan of fresh cold water. Bring to the boil, then reduce the heat and simmer for 15-20 minutes until the fish is completely tender and flakes easily.',
+    'Drain the cooked fish and use two forks to flake it into large pieces, carefully removing any bones or grey skin as you go. Set the flaked fish aside.',
+    'Heat 2 tbsp vegetable oil in a frying pan over a medium heat. Add 1 sliced onion and 1 sliced pepper and cook for 7-8 minutes, stirring occasionally, until the vegetables are softened and the onion is turning golden at the edges.',
+    'Add the flaked saltfish to the pan and stir carefully to combine with the onion and pepper. Cook for a further 5 minutes, allowing the flavours to meld and the fish to develop a slight crispness at the edges.',
+    'Drain 200g canned ackee very carefully — ackee is delicate and can break apart easily. Add it to the pan with extreme care and heat through for 2-3 minutes on a very gentle heat, stirring as little as possible. Ackee should be added at the last moment to preserve its texture.',
+    'Season with freshly ground black pepper and strip over fresh thyme leaves. Serve immediately — ackee must always be served hot, as it does not reheat well and can become mushy.'
+  ]
+},
+'jamaican-fried-dumplings': {
+  name: 'Jamaican Fried Dumplings',
+  type: 'breakfast',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/jamaican-fried-dumplings',
+  tags: ['jamaican', 'caribbean', 'dough', 'fried'],
+  servings: 2,
+  ingredients: [
+    '200g plain flour',
+    '1 tsp salt',
+    '1 tsp sugar',
+    '60ml water',
+    '2 tbsp butter, softened',
+    'Oil for deep frying'
+  ],
+  method: [
+    'Place 200g plain flour, 1 tsp salt, and 1 tsp sugar in a large bowl. Mix dry ingredients together until evenly distributed throughout the flour.',
+    'Add 2 tbsp softened butter — it should be soft enough to push through the flour easily with your fingertips. Rub the butter into the flour using your fingertips until the mixture resembles coarse breadcrumbs with no large butter pieces remaining.',
+    'Gradually add 60ml water, a tablespoon at a time, mixing with a fork or your hand. Stop adding water when the dough comes together into a smooth, slightly sticky ball — it should feel like playdough and not be crumbly or dry. You may not need all the water.',
+    'On a lightly floured surface, divide the dough into 6-8 equal pieces. Roll each piece into a small ball between your palms, then flatten slightly into a rough oval disc about 1cm thick — this shape is traditional for Jamaican fried dumplings.',
+    'Heat vegetable oil in a deep pan or saucepan to 180°C — use a thermometer if available, or test by dropping a small piece of dough in: it should immediately float to the surface and sizzle vigorously.',
+    'Carefully lower the dumplings into the hot oil (work in batches if needed to avoid crowding). Fry for 3-4 minutes per side until they are a deep, golden brown all over — they will expand slightly as they cook.',
+    'Remove with a slotted spoon and drain on a plate lined with kitchen paper. The dumplings should be crisp on the outside and cooked through in the middle. Serve immediately while hot — traditionally eaten alone with saltfish, or as a side to any Jamaican breakfast.'
+  ]
+},
+'peanut-herb-noodle-salad': {
+  name: 'Peanut & Herb Noodle Salad',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/peanut-herb-noodle-salad',
+  tags: ['vietnamese', 'thai', 'noodles', 'fresh', 'no-cook'],
+  servings: 2,
+  ingredients: [
+    '200g rice noodles',
+    '60g roasted peanuts, roughly crushed',
+    'Large handful of fresh mint',
+    'Large handful of fresh coriander',
+    '2 spring onions, sliced',
+    '2 tbsp peanut butter',
+    '1 lime, juiced',
+    '1 tbsp soy sauce',
+    '1 tsp sesame oil'
+  ],
+  method: [
+    'Place 200g rice noodles in a large bowl and cover with cold water. Leave to soak for 30 minutes — the noodles will soften and become pliable without cooking, giving them a better texture than boiling.',
+    'While the noodles soak, prepare the peanut dressing: place 2 tbsp peanut butter, juice of 1 lime, 1 tbsp soy sauce, and 1 tsp sesame oil in a jar or bowl. Whisk together until smooth — if too thick, add a tablespoon of warm water to loosen.',
+    'Drain the soaked noodles and shake off any excess water. Place them in a large bowl and pour the peanut dressing over the top. Toss thoroughly with two spoons or chopsticks, ensuring every strand of noodle is coated in the rich, umami dressing.',
+    'Roughly crush 60g roasted peanuts in a mortar and pestle or by wrapping them in a clean tea towel and bashing with a rolling pin — you want a mix of fine crumbs and chunky pieces for varied texture.',
+    'Pick through a large handful of fresh mint and a large handful of fresh coriander, discarding any thick stems. Add them to the noodles along with 2 sliced spring onions.',
+    'Toss everything together gently. Taste and adjust — you may want more lime juice for brightness, soy sauce for saltiness, or peanut butter for richness. Serve immediately or refrigerate for up to 2 hours before serving.'
+  ]
+},
+'thai-rice-noodle-salad': {
+  name: 'Thai Rice Noodle Salad',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/thai-rice-noodle-salad',
+  tags: ['thai', 'noodles', 'fresh', 'salad', 'no-cook'],
+  servings: 2,
+  ingredients: [
+    '200g rice vermicelli',
+    '1 carrot, julienned',
+    '1 cucumber, julienned',
+    '2 tbsp fish sauce',
+    '1 lime, juiced',
+    '1 tbsp sugar',
+    'Chilli flakes',
+    'Fresh coriander and mint'
+  ],
+  method: [
+    'Bring a kettle of water to the boil. Place 200g rice vermicelli in a large heatproof bowl and pour the boiling water over them. Leave to soak for exactly 5 minutes — watch the clock, as over-soaking makes the noodles turn to mush.',
+    'After 5 minutes, drain the noodles through a colander and immediately rinse under cold running water to stop the cooking process and cool them down quickly. Spread them out on a clean tray to prevent clumping.',
+    'Make the dressing: whisk 2 tbsp fish sauce, juice of 1 lime, and 1 tbsp sugar together in a small bowl until the sugar has completely dissolved. Taste — it should be a balanced punch of salty, sour, and sweet.',
+    'Julienne 1 carrot and 1 cucumber into fine matchstick-sized pieces, roughly 5cm long. The thinner the cuts, the better the texture and the easier it is to coat the noodles evenly.',
+    'Place the cooled noodles in a large bowl and pour the dressing over them. Toss thoroughly, then add the julienned vegetables and toss again until everything is evenly distributed.',
+    'Top with a generous handful of fresh coriander and mint leaves, and dust with a pinch of chilli flakes for gentle heat. Serve immediately or cover and refrigerate — unlike many noodle dishes, this salad is actually better after 30 minutes in the fridge as the flavours meld.'
+  ]
+},
+'tofu-bean-noodle-stirfry': {
+  name: 'Tofu & Edamame Noodle Stir-fry',
+  type: 'lunch',
+  source: 'BBC Food',
+  sourceUrl: 'https://www.bbc.com/food/recipes/edamame_and_tofu_97832',
+  tags: ['chinese', 'stir-fry', 'vegan', 'tofu', 'noodles'],
+  servings: 2,
+  ingredients: [
+    '200g firm tofu, cubed',
+    '100g edamame beans',
+    '150g noodles',
+    '2 tbsp soy sauce',
+    '1 tbsp sesame oil',
+    '1 garlic clove, minced',
+    '100g vegetables (pak choi, beansprouts)',
+    '1 tbsp vegetable oil'
+  ],
+  method: [
+    'Cook 150g noodles according to package instructions — usually 4-5 minutes in boiling water. Drain and set aside, tossing with a little oil to prevent sticking.',
+    'Press 200g firm tofu between two clean tea towels or paper towels for 5 minutes to remove excess moisture. This step prevents the tofu from steaming in the pan and ensures it fries rather than boils. Cut into 1cm cubes.',
+    'Heat 1 tbsp vegetable oil in a wok over a high heat until the oil shimmers. Carefully add the tofu cubes — do not stir them for the first 2 minutes, allowing them to develop a golden crust on one side before flipping.',
+    'Flip the tofu and cook the other sides until golden, then add 1 minced garlic clove. Stir-fry for 30 seconds until fragrant, then add 100g edamame beans (shelled, frozen is fine) and 100g vegetables such as pak choi or beansprouts.',
+    'Stir-fry the vegetables for 2-3 minutes until tender but still vibrant — overcooking will make them wilted and grey. The edamame should be heated through.',
+    'Add the cooked noodles to the wok along with 2 tbsp soy sauce and 1 tbsp sesame oil. Toss everything together over the high heat for 1-2 minutes until the noodles are heated through and lightly charred at the edges. Serve immediately.'
+  ]
+},
+'veggie-peanut-noodles': {
+  name: 'Veggie Peanut Noodles with Omelette Ribbons',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/veggie-peanut-noodles-omelette-ribbons',
+  tags: ['vegetarian', 'noodles', 'quick'],
+  servings: 2,
+  ingredients: [
+    '200g egg noodles',
+    '2 eggs',
+    '100g frozen peas',
+    '2 carrots, grated',
+    '3 tbsp peanut butter',
+    '1 tbsp soy sauce',
+    '1 tbsp sesame oil',
+    'Juice of 1 lime'
+  ],
+  method: [
+    'Cook 200g egg noodles in a saucepan of boiling water according to package instructions, usually 4-5 minutes. Drain thoroughly and rinse under cold running water to cool them quickly and stop the cooking. Set aside.',
+    'Beat 2 eggs in a small bowl. Heat a non-stick pan over a medium heat and add a little butter. Pour in the eggs and cook, tilting the pan, into a thin flat omelette — the goal is a large, thin disc, not a fluffy omelette.',
+    'When the omelette is just set on the surface and lightly golden on the underside (about 2 minutes), slide it onto a plate. Roll it up loosely into a cylinder and use a sharp knife to slice down the length into thin ribbons — set aside.',
+    'Make the peanut sauce: place 3 tbsp peanut butter, 1 tbsp soy sauce, 1 tbsp sesame oil, and juice of 1 lime in a bowl. Whisk together, adding 1-2 tbsp warm water to loosen to a pourable but thick consistency.',
+    'Place the drained noodles in a large bowl. Add 100g frozen peas (no need to thaw) and 2 grated carrots. Pour the peanut sauce over everything and toss thoroughly until all the noodles and vegetables are coated.',
+    'Divide between two bowls and top each with a portion of the omelette ribbons. For extra crunch and flavour, sprinkle over some crushed roasted peanuts and a few sliced spring onions.'
+  ]
+},
+'jollof-rice': {
+  name: 'Jollof Rice with Chicken',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/jollof-rice-chicken',
+  tags: ['west-african', 'comfort', 'one-pot'],
+  servings: 2,
+  ingredients: [
+    '250g long-grain rice',
+    '300g chicken pieces',
+    '400g tinned tomatoes',
+    '1 onion, diced',
+    '500ml chicken stock',
+    '2 tbsp vegetable oil',
+    '1 tsp thyme',
+    '1 tsp curry powder'
+  ],
+  method: [
+    'Season 300g chicken pieces with 1 tsp curry powder, 1 tsp thyme, and a pinch of salt. In a large, heavy-bottomed pan or casserole, heat 2 tbsp vegetable oil over a high heat until shimmering.',
+    'Brown the chicken pieces in batches — do not crowd the pan or the chicken will steam rather than brown. Cook for 3-4 minutes per side until golden brown all over. Remove and set aside.',
+    'In the same pan, reduce the heat to medium and add 1 diced onion. Cook for 5-7 minutes, stirring occasionally, until the onion is softened and golden at the edges. Return the chicken to the pan.',
+    'Add 400g canned tomatoes and 500ml chicken stock to the pan. Stir everything together, then bring to a gentle simmer. Cover with a lid and reduce the heat to low.',
+    'Cook for 15 minutes, then add 250g long-grain rice (rinsed until water runs clear), stirring it into the liquid. Cover and cook on a very low heat for 25-30 minutes without lifting the lid.',
+    'After 25-30 minutes, check if the rice is cooked — it should be tender and have absorbed most of the liquid. If needed, cook for another 5 minutes. Stir gently once from the bottom to ensure nothing sticks, then serve directly from the pan.'
+  ]
+},
+'one-pan-breakfast': {
+  name: 'One-Pan Breakfast',
+  type: 'breakfast',
+  source: 'Jamie Oliver',
+  sourceUrl: 'https://www.jamieoliver.com/recipes/breakfast-recipes/one-pan-breakfast/',
+  tags: ['hearty', 'weekend'],
+  servings: 2,
+  ingredients: [
+    '4 eggs',
+    '2 potatoes, cubed',
+    '4 rashers bacon',
+    '1 onion, sliced',
+    '2 tbsp olive oil',
+    'Salt and pepper'
+  ],
+  method: [
+    'Cut 2 potatoes into 1cm cubes and place in a saucepan of cold salted water. Bring to the boil and par-cook for exactly 5 minutes — they should be just tender enough to pierce with a fork but still quite firm, as they\'ll finish cooking in the pan.',
+    'While the potatoes cook, heat 2 tbsp olive oil in a large, wide frying pan (a cast iron skillet is ideal) over a medium-high heat. The oil should shimmer and flow easily across the pan.',
+    'Drain the par-boiled potatoes and add them to the hot pan in a single layer. Cook for 8-10 minutes, turning occasionally, until they are golden brown and crisp on all sides. Remove and set aside.',
+    'Add 1 sliced onion to the pan and cook for 3-4 minutes until softened. Add 4 rashers of bacon (cut into rough pieces) and cook until the bacon is rendered, crispy, and golden — about 5-6 minutes.',
+    'Return the potatoes to the pan and make 4 evenly spaced gaps in the mixture. Crack 4 eggs into the gaps, distributing them so the yolks don\'t touch. Reduce the heat to medium-low.',
+    'Cover the pan with a lid or a sheet of foil and cook for 3-5 minutes. Check the eggs by gently shaking the pan — the whites should be fully set (opaque) but the yolks should still jiggle when the pan is moved. Season with salt and pepper and serve directly from the pan.'
+  ]
+},
+'parmesan-french-toast': {
+  name: 'Parmesan French Toast',
+  type: 'breakfast',
+  source: 'BBC Food',
+  sourceUrl: 'https://www.bbc.co.uk/food/recipes/parmesan_french_toast_87497',
+  tags: ['vegetarian', 'savoury', 'brunch'],
+  servings: 2,
+  ingredients: [
+    '4 eggs',
+    '50g parmesan, grated',
+    '4 thick slices brioche or sourdough',
+    '20g butter',
+    'Salt and black pepper',
+    'Fresh thyme'
+  ],
+  method: [
+    'Crack 4 large eggs into a wide, shallow bowl. Grate 50g parmesan finely on a microplane or the finest setting of a box grater — the finer the grate, the better it will incorporate into the egg mixture.',
+    'Whisk the eggs and parmesan together with a pinch of salt, freshly ground black pepper, and a few stripped fresh thyme leaves. The mixture should be pale yellow and slightly frothy.',
+    'Heat a heavy-based pan (such as a cast iron skillet or non-stick frying pan) over a medium heat. Add 20g butter and let it melt, foaming gently — this is the right temperature when the butter stops sizzling aggressively.',
+    'Dip 4 thick slices of brioche or sourdough into the egg mixture, turning to coat both sides thoroughly. Let the bread soak for 10-15 seconds per side — this allows the bread to absorb enough egg to cook evenly without being soggy in the middle.',
+    'Place the dipped bread slices in the pan (work in batches if needed) and cook for 3-4 minutes per side until the exterior is golden brown, the egg has set, and the cheese has melted. The interior should be soft and custardy.',
+    'Remove and serve immediately with a simple green salad dressed with lemon vinaigrette — the sharp, fresh salad cuts through the richness of the French toast beautifully.'
+  ]
+},
+'fluffy-american-pancakes': {
+  name: 'Fluffy American Pancakes',
+  type: 'breakfast',
+  source: 'BBC Food',
+  sourceUrl: 'https://www.bbc.co.uk/food/recipes/fluffyamericanpancak_74828',
+  tags: ['weekend', 'sweet', 'brunch'],
+  servings: 2,
+  ingredients: [
+    '200g self-raising flour',
+    '1 tbsp sugar',
+    '1 egg',
+    '300ml milk',
+    '20g butter, melted',
+    'Butter for cooking',
+    'Maple syrup to serve'
+  ],
+  method: [
+    'Place 200g self-raising flour and 1 tbsp sugar in a large mixing bowl. Whisk together until the sugar is evenly distributed throughout the flour — this is the dry mix that needs to be fully combined before adding any liquid.',
+    'In a separate bowl or jug, crack 1 egg and add 300ml milk. Whisk together thoroughly until the egg is fully incorporated into the milk. Add 20g melted butter (cooled slightly so it doesn\'t scramble the egg) and whisk again.',
+    'Pour the wet ingredients into the dry ingredients and mix with a spatula or balloon whisk until you have a smooth batter — lumps are fine at this stage, but mix until no dry flour remains. Do not overmix; a few small lumps in the batter actually make for fluffier pancakes.',
+    'Heat a large frying pan or griddle over a medium heat. Add a small knob of butter and let it melt, then tilt the pan to coat the base. The pan is ready when a drop of water bounces across the surface.',
+    'Pour 2-3 tablespoons of batter per pancake into the pan, leaving space between each one. Cook for 2-3 minutes until bubbles appear on the surface, the edges look set, and the base is golden brown.',
+    'Flip each pancake carefully with a spatula and cook the other side for a further 1-2 minutes until golden. Remove and keep warm under a clean tea towel while you cook the remaining batter.',
+    'Stack the pancakes on two plates, pour over maple syrup to serve, and eat immediately while fluffy and hot.'
+  ]
+},
+'bacon-salad': {
+  name: 'Warm Bacon & Egg Salad',
+  type: 'lunch',
+  source: 'Delia Smith',
+  sourceUrl: 'https://www.deliaonline.com/recipes/collections/delia-online-cookery-school/warm-poached-egg-salad-with-frizzled-bacon-and-a-sizzling-sherry-vinegar-dressing',
+  tags: ['warm', 'salad', 'filling'],
+  servings: 2,
+  ingredients: [
+    '4 rashers streaky bacon',
+    '2 eggs',
+    '1 Little Gem lettuce',
+    '1 tbsp sherry vinegar',
+    '2 tbsp olive oil',
+    'Salt and pepper'
+  ],
+  method: [
+    'Lay 4 rashers of streaky bacon in a single layer on a grill tray or in a cold ovenproof frying pan. If using a grill, line the tray with foil for easier cleaning. Set under a hot grill for 4-5 minutes, turning once halfway through, until the bacon is deeply crispy and golden at the edges.',
+    'While the bacon grills, bring a small pan of water to a gentle boil and crack 2 eggs into it — for a poached egg, the water should be gently moving, not a rolling boil. Alternatively, fry in a little butter in a non-stick pan for a more forgiving method.',
+    'Poach the eggs for 3-4 minutes for a runny yolk with a just-set white. Remove with a slotted spoon and drain on a piece of kitchen paper. If frying, cook for 2-3 minutes per side until the white is set.',
+    'Separate 1 Little Gem lettuce into individual leaves, wash in cold water, and dry thoroughly in a salad spinner or by patting with kitchen paper. Arrange the leaves on two plates.',
+    'Whisk together 1 tbsp sherry vinegar and 2 tbsp olive oil in a small bowl or jug — the vinegar should be fully emulsified into the oil. Season with a pinch of salt and pepper.',
+    'Toss the lettuce leaves with the dressing. Place the crispy bacon and poached or fried eggs on top, crumble the bacon into rough pieces if desired. Season with freshly ground black pepper and serve immediately while the egg yolk is still warm and runny.'
+  ]
+},
+'ploughmans-lunch': {
+  name: "Ploughman's Lunch",
+  type: 'lunch',
+  source: 'BBC Food',
+  sourceUrl: 'https://www.bbc.co.uk/food/recipes/ploughmans_lunch_salad_06706',
+  tags: ['classic', 'filling', 'no-cook'],
+  servings: 2,
+  ingredients: [
+    '100g mature cheddar, sliced',
+    '2 slices granary bread',
+    '2 tbsp pickle',
+    '1 apple, sliced',
+    'Small bunch of grapes',
+    'Handful of walnuts',
+    'Mustard and cress'
+  ],
+  method: [
+    'Remove 100g mature cheddar from the fridge 20 minutes before serving — it should be served at room temperature, when the flavour is at its most complex and the texture is smooth and yielding rather than waxy.',
+    'Place the cheddar on a wooden board or a large plate. If you want to be precise, slice it neatly with a sharp knife, or simply place it in a slightly overlapping stack.',
+    'Place 2 slices of granary bread on the board and add a small pot of pickle (such as Branston or similar) alongside the cheese. Slice 1 apple into neat segments — do not discard the core, as the slices can be arranged in a fan shape for a more elegant presentation.',
+    'Add a small bunch of grapes (red and green together looks attractive) and a handful of walnuts to the board, arranging them so they complement the cheese and bread.',
+    'Tuck a small bunch of mustard and cress (or watercress if cress is unavailable) in beside the cheese for a peppery, fresh element that cuts through the richness of the cheddar.',
+    'Add a small separate dish of butter for spreading on the bread. To assemble: spread butter on the bread, top with cheese and a generous spoonful of pickle, and eat alongside the apple, grapes, and walnuts. The classic ploughman\'s lunch is a meal in itself.'
+  ]
+},
+'vietnamese-pho': {
+  name: 'Vietnamese Beef Pho',
+  type: 'lunch',
+  source: 'BBC Food',
+  sourceUrl: 'https://www.bbc.co.uk/food/recipes/vietnamese_beef_pho_70135',
+  tags: ['vietnamese', 'noodle soup', 'comfort'],
+  servings: 2,
+  ingredients: [
+    '150g rice noodles',
+    '150g beef sirloin, thinly sliced',
+    '1 litre beef stock',
+    '2 star anise',
+    '1 cinnamon stick',
+    '3cm piece of ginger',
+    '2 tbsp fish sauce',
+    'Juice of 1 lime',
+    'Bean sprouts',
+    'Fresh Thai basil and coriander'
+  ],
+  method: [
+    'Place 2 star anise and 1 cinnamon stick in a dry frying pan over a medium heat. Toast, shaking the pan regularly, for 2-3 minutes until the spices are fragrant and slightly darkened — this blooming step intensifies their flavours dramatically.',
+    'While toasting the spices, peel and halve 3cm piece of ginger lengthways. After toasting, transfer the spices to a large saucepan and add 1 litre beef stock and the ginger. Bring to a gentle simmer over medium heat.',
+    'Simmer the broth for 20 minutes, allowing the spices and ginger to infuse — you should be able to smell the star anise and cinnamon in the steam. After 20 minutes, strain the broth through a fine sieve to remove the whole spices and ginger pieces.',
+    'Place 150g rice noodles in a heatproof bowl and pour boiling water over them. Soak for 10-15 minutes until softened, or cook according to packet instructions. Drain and divide between two large bowls.',
+    'Slice 150g beef sirloin as thinly as possible — freeze the meat for 20 minutes beforehand to make it easier to slice. The slices should be almost translucent so they cook quickly in the hot broth.',
+    'Return the strained broth to a high heat and bring to a rolling boil. Place the raw beef slices in the bowls and pour the boiling broth directly over them — the heat from the broth will cook the beef instantly. Add 2 tbsp fish sauce and juice of 1 lime to the broth.',
+    'Serve immediately with bean sprouts, fresh lime wedges, Thai basil, and coriander on the side — instruct each person to add their own garnishes to taste.'
+  ]
+},
+'chicken-pho': {
+  name: 'Chicken Pho',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/chicken-pho',
+  tags: ['vietnamese', 'noodle soup', 'comfort'],
+  servings: 2,
+  ingredients: [
+    '150g rice noodles',
+    '2 chicken breasts',
+    '1 litre chicken stock',
+    '2 spring onions',
+    '3cm piece of ginger',
+    '1 tbsp fish sauce',
+    '1 tsp sugar',
+    'Bean sprouts',
+    'Fresh lime and Thai basil'
+  ],
+  method: [
+    'Place 2 chicken breasts in a wide, deep pan or casserole. Add 1 litre chicken stock, 2 spring onions (roughly chopped), and 3cm piece of ginger (peeled and sliced). The aromatics will infuse the broth as the chicken cooks.',
+    'Place over a medium-high heat and bring to a gentle simmer — you want small bubbles breaking the surface, not a rolling boil. Skim off any foam that rises to the surface with a slotted spoon.',
+    'Poach the chicken breasts for 15 minutes, maintaining a gentle simmer throughout. The chicken is done when it feels firm when pressed with a finger and the juices run clear with no pink. Insert a knife into the thickest part to check.',
+    'Remove the chicken breasts from the broth and set aside on a plate. Strain the broth through a fine sieve to remove the ginger and spring onions. Keep the broth simmering on a low heat — it is the flavour base for the entire pho.',
+    'Add 1 tbsp fish sauce and 1 tsp sugar to the strained broth and stir to dissolve. Taste — the broth should be balanced between salty (fish sauce) and a subtle sweetness. Adjust to your preference.',
+    'Cook the rice noodles in a separate saucepan of boiling water according to packet instructions. Drain and divide between two deep bowls.',
+    'Shred the cooked chicken breasts into fine strips using two forks. Place the shredded chicken on top of the noodles in each bowl. Ladle the hot broth generously over the noodles and chicken.',
+    'Serve immediately with bean sprouts, fresh lime wedges, and Thai basil on the side for each person to add their own garnishes to taste.'
+  ]
+},
+'tantanmen-ramen': {
+  name: 'Tantanmen Ramen',
+  type: 'lunch',
+  source: 'Various',
+  sourceUrl: 'https://www.bbc.co.uk/food/recipes/tonkotsu_ramen_77783',
+  tags: ['japanese', 'ramen', 'noodle soup', 'spicy'],
+  servings: 2,
+  ingredients: [
+    '200g ramen noodles',
+    '200g minced pork',
+    '1 litre chicken stock',
+    '3 tbsp tahini',
+    '1 tbsp chilli bean paste (doubanjiang)',
+    '1 tbsp soy sauce',
+    '1 tsp sesame oil',
+    '2 soft-boiled eggs',
+    'Spring onions and nori'
+  ],
+  method: [
+    'Bring a small saucepan of water to the boil. Carefully lower 2 eggs in and cook for exactly 6 minutes for a soft-boiled egg with a jammy, orange yolk. Immediately transfer to a bowl of ice water for 2 minutes to stop the cooking.',
+    'Peel the soft-boiled eggs and set aside — they will be halved and placed on top of the ramen, so handle them carefully to keep the yolks intact.',
+    'Place 200g minced pork in a cold pan (no oil) and set over a medium-high heat. Break it up with a wooden spoon as it cooks. Once the pork has browned and the fat has rendered, add 1 tbsp chilli bean paste (doubanjiang) and 1 tbsp soy sauce.',
+    'Stir the chilli bean paste into the pork and cook for 2-3 minutes until the mixture is fragrant and the pork is coated in the deep red, spicy paste. Remove from the heat and set aside.',
+    'In a separate pan, warm 3 tbsp tahini with a ladleful of chicken stock, stirring to loosen it into a smooth, pourable consistency. Combine this with the remaining 1 litre chicken stock in a large pot.',
+    'Add 1 tsp sesame oil to the broth and taste — season with soy sauce if needed. Keep the broth on a low simmer. Cook 200g ramen noodles according to packet instructions, usually 4-5 minutes in boiling water, then drain.',
+    'Divide the cooked noodles between two large bowls. Ladle the hot, spicy tahini broth over the noodles, then spoon the pork mixture on top. Halve the soft-boiled eggs and place 2 halves in each bowl.',
+    'Finish with sliced spring onions and nori sheets (cut into squares) placed on top. Serve immediately — ramen waits for no one.'
+  ]
+},
+'tonkotsu-ramen': {
+  name: 'Tonkotsu Ramen',
+  type: 'lunch',
+  source: 'BBC Food',
+  sourceUrl: 'https://www.bbc.co.uk/food/recipes/tonkotsu_ramen_77783',
+  tags: ['japanese', 'ramen', 'noodle soup', 'rich'],
+  servings: 2,
+  ingredients: [
+    '200g fresh ramen noodles',
+    '500ml pork or chicken stock',
+    '100ml double cream',
+    '2 tbsp soy sauce',
+    '1 tbsp mirin',
+    '2 pork belly slices, braised',
+    '1 soft-boiled egg',
+    'Nori sheets',
+    'Spring onions and bamboo shoots'
+  ],
+  method: [
+    'Pour 500ml pork or chicken stock into a large saucepan. Add 2 tbsp soy sauce and 1 tbsp mirin. Bring to a gentle simmer over medium heat and cook for 10 minutes — this allows the flavours to concentrate and the alcohol from the mirin to cook off.',
+    'Stir in 100ml double cream for a rich, creamy broth. Taste carefully — the broth should be savoury, slightly sweet, and deeply unctuous. Adjust with more soy sauce if needed, but resist adding more stock as the cream already makes it rich.',
+    'Bring a separate pan of water to the boil and cook 200g fresh ramen noodles according to the packet instructions — usually 4-5 minutes for fresh noodles. Drain immediately and rinse under cold running water to remove excess starch.',
+    'Heat a small amount of oil in a separate pan over a medium heat. Add 2 pork belly slices and cook for 2-3 minutes per side until warmed through and the surface has a light caramelisation. Alternatively, torch the surface for a more authentic char.',
+    'Warm two large noodle bowls by rinsing them with hot water (or simply use the bowls directly from the warming broth). Place the drained noodles in the bowls first.',
+    'Ladle the hot creamy broth over the noodles, filling the bowls generously. Arrange the pork belly slices, a halved soft-boiled egg (prepared separately), nori sheets, sliced spring onions, and bamboo shoots on top.',
+    'Serve immediately while the broth is at its hottest. For extra depth, some people add a drizzle of sesame oil or a touch more mirin at the table.'
+  ]
+},
+'miso-ramen': {
+  name: 'Miso Ramen',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/miso-ramen',
+  tags: ['japanese', 'ramen', 'noodle soup'],
+  servings: 2,
+  ingredients: [
+    '200g ramen or soba noodles',
+    '1 litre chicken stock',
+    '3 tbsp white miso paste',
+    '1 tbsp soy sauce',
+    '1 tsp sesame oil',
+    '100g cooked chicken or tofu',
+    '1 soft-boiled egg',
+    'Sweetcorn kernels',
+    'Spring onions and nori'
+  ],
+  method: [
+    'Pour 1 litre chicken stock into a large saucepan and set over a medium heat. Warm it gently — do not boil yet. Remove a ladleful (about 200ml) of the hot stock and place it in a small bowl.',
+    'Add 3 tbsp white miso paste to the small bowl of hot stock and whisk vigorously until the miso has completely dissolved and there are no lumps. This prevents the miso from clumping when added to the main pot.',
+    'Return the dissolved miso mixture to the saucepan and add 1 tbsp soy sauce and 1 tsp sesame oil. Stir to combine and warm over a low heat — never boil the miso broth, as high heat will destroy the beneficial cultures in the miso and dull the flavour.',
+    'Bring a separate pan of water to the boil and cook 200g ramen or soba noodles according to packet instructions. Drain and divide between two large noodle bowls.',
+    'Place 100g cooked chicken (or cubed tofu for a vegan version) in the saucepan with the miso broth and warm through for 2-3 minutes. ladle the hot broth and protein over the noodles in the bowls.',
+    'Add sweetcorn kernels to the broth for the final minute of warming — they should be heated through but still bright yellow. Top each bowl with spring onions and nori sheets.',
+    'Serve immediately with chopsticks and a spoon. Each person can add extra soy sauce, sesame oil, or chilli flakes at the table to adjust the flavour to their preference.'
+  ]
+},
+'miso-soup': {
+  name: 'Miso Soup with Tofu',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/miso-soup',
+  tags: ['japanese', 'soup', 'vegan', 'quick'],
+  servings: 2,
+  ingredients: [
+    '600ml dashi stock',
+    '3 tbsp white miso paste',
+    '150g silken tofu, cubed',
+    '2 spring onions, sliced',
+    '1 sheet nori, shredded',
+    '1 tbsp dried wakame seaweed'
+  ],
+  method: [
+    'Prepare the dashi stock according to the packet instructions — typically this involves dissolving dashi powder or concentrate in 600ml of hot water. You can also make it from kombu and bonito flakes for a more authentic flavour, but packet dashi is perfectly good.',
+    'Remove about 100ml of the hot dashi stock and place it in a small bowl. Add 3 tbsp white miso paste and whisk until completely dissolved — this pre-dissolving step is essential to avoid lumps in your finished soup.',
+    'Return the miso mixture to the remaining dashi stock and place over a very gentle, low heat. Warm until the soup is steaming but not boiling — you should see wisps of steam but no bubbles breaking the surface. Never boil miso soup, as this kills the live cultures and muddies the flavour.',
+    'Add 150g silken tofu, cubed into 1cm pieces, and 1 tbsp dried wakame seaweed to the soup. The wakame will rehydrate quickly in the hot broth, expanding to about four times its dry volume.',
+    'Warm the soup gently for 2-3 minutes until the tofu is heated through and the wakame has fully expanded — watch carefully that the tofu cubes don\'t break apart in the liquid.',
+    'Ladle into two bowls and top each with sliced spring onions and 1 sheet of nori, cut into thin strips. Serve immediately as a light, nourishing starter or side dish.'
+  ]
+},
+'chicken-donburi': {
+  name: 'Chicken Katsu Don',
+  type: 'lunch',
+  source: 'BBC Food',
+  sourceUrl: 'https://www.bbc.co.uk/food/recipes/chicken_katsu_don_68079',
+  tags: ['japanese', 'donburi', 'rice', 'comfort'],
+  servings: 2,
+  ingredients: [
+    '2 chicken breasts',
+    '50g plain flour',
+    '1 egg, beaten',
+    '80g panko breadcrumbs',
+    '300g cooked Japanese short-grain rice',
+    '1 onion, sliced',
+    '200ml chicken stock',
+    '2 tbsp soy sauce',
+    '1 tbsp mirin',
+    '1 tbsp vegetable oil'
+  ],
+  method: [
+    'Set up a breading station: place 50g plain flour on a plate, beat 1 egg in a shallow bowl, and spread 80g panko breadcrumbs on another plate. Season each with a pinch of salt. This three-stage coating is what creates the signature katsu crunch.',
+    'Pat the chicken breasts dry with kitchen paper. If the breasts are very thick, place them between two sheets of cling film and pound gently with a rolling pin to an even thickness of about 1.5cm — this ensures even cooking and more breading coverage.',
+    'Coat each chicken breast first in the flour (shake off any excess), then dip in the beaten egg (let any excess drip off), then press firmly into the panko breadcrumbs, ensuring all surfaces are thoroughly covered. Press the breadcrumbs down well.',
+    'Heat vegetable oil (about 1cm deep) in a large frying pan over a medium-high heat. The oil is ready when a breadcrumb dropped in sizzles immediately. Carefully place the breaded chicken breasts in the pan.',
+    'Shallow-fry the chicken for 4-5 minutes per side until the breadcrumbs are a deep, golden brown and the chicken is cooked through — insert a knife into the thickest part; the juices should run clear with no pink. If browning too quickly, reduce the heat.',
+    'While the chicken cooks, sauté 1 sliced onion in a little oil over a medium heat for 5-7 minutes until soft and golden. Add 200ml chicken stock, 2 tbsp soy sauce, and 1 tbsp mirin, then simmer for 5 minutes.',
+    'Slice the cooked katsu chicken on a bias into thick strips — about 1.5cm wide — and place over 300g cooked Japanese short-grain rice in deep bowls. Spoon the onion and sauce mixture over the chicken. Serve immediately.'
+  ]
+},
+'tonkotsu-don': {
+  name: 'Tonkotsu Don',
+  type: 'lunch',
+  source: 'Various',
+  sourceUrl: 'https://www.bbc.co.uk/food/recipes/pork_gyudon_77775',
+  tags: ['japanese', 'donburi', 'rice', 'pork'],
+  servings: 2,
+  ingredients: [
+    '200g pork belly, thinly sliced',
+    '1 onion, thinly sliced',
+    '300g cooked short-grain rice',
+    '150ml pork or dashi stock',
+    '2 tbsp soy sauce',
+    '1 tbsp mirin',
+    '1 tsp sugar',
+    '1 tbsp vegetable oil',
+    '2 soft-boiled eggs',
+    'Spring onions and sesame seeds'
+  ],
+  method: [
+    'Prepare the soft-boiled eggs first, as they need time to cool: bring a small pan of water to the boil, carefully lower in 2 eggs, and cook for exactly 6 minutes. Transfer to ice water for 2 minutes, then peel and set aside — they\'ll be halved later.',
+    'Heat 1 tbsp vegetable oil in a frying pan over a medium-high heat. Add 1 thinly sliced onion and cook for 5-7 minutes, stirring occasionally, until the onion is completely softened and turning golden at the edges.',
+    'Add 200g thinly sliced pork belly to the pan and cook until the meat is browned on all sides — about 3-4 minutes. The pork belly will release its fat, which will help caramelise the onions.',
+    'Pour in 150ml pork or dashi stock, 2 tbsp soy sauce, 1 tbsp mirin, and 1 tsp sugar. Stir everything together and bring to a gentle simmer. Cook for 10 minutes until the sauce has reduced by about half and the flavours have melded together into a glossy, savory glaze.',
+    'Divide 300g cooked short-grain rice (ideally Japanese rice, which has a stickier texture) between two deep bowls. Use the back of a spoon or a rice paddle to compact the rice slightly.',
+    'Spoon the pork and onion mixture with the sauce over the rice, distributing it evenly. Halve the soft-boiled eggs and place 1 half in each bowl, positioned so the yolk is visible.',
+    'Finish by scattering sliced spring onions and a pinch of sesame seeds over the top. Serve immediately, stirring the egg yolk into the rice before eating for a rich, silky finish.'
+  ]
+},
+'beef-teriyaki-don': {
+  name: 'Beef Teriyaki Don',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/beef-teriyaki',
+  tags: ['japanese', 'donburi', 'rice', 'beef'],
+  servings: 2,
+  ingredients: [
+    '200g beef sirloin, thinly sliced',
+    '300g cooked short-grain rice',
+    '3 tbsp soy sauce',
+    '2 tbsp mirin',
+    '1 tbsp sake or dry sherry',
+    '1 tsp sugar',
+    '1 onion, sliced',
+    '1 tbsp vegetable oil',
+    'Sesame seeds and spring onions'
+  ],
+  method: [
+    'Mix 3 tbsp soy sauce, 2 tbsp mirin, 1 tbsp sake or dry sherry, and 1 tsp sugar together in a small bowl — this is the teriyaki sauce and should be ready before you start cooking. Stir until the sugar has dissolved completely.',
+    'Heat 1 tbsp vegetable oil in a large frying pan or wok over a medium-high heat. Add 1 sliced onion and cook for 5-7 minutes, stirring regularly, until the onion is softened and beginning to turn golden at the edges.',
+    'Increase the heat to high and add 200g beef sirloin (sliced thinly against the grain for maximum tenderness). Spread the slices out in the pan — do not crowd them or the beef will steam rather than sear.',
+    'Cook the beef for 1-2 minutes without stirring, allowing it to develop a caramelised crust on one side. Then flip and cook the other side for 1 minute — the beef should be browned but still pink in the centre.',
+    'Pour the teriyaki sauce over the beef and onion. Cook for 1-2 minutes, stirring or tossing the beef in the sauce, until the sauce has reduced into a glossy, thick glaze that coats every piece of beef. Remove from the heat immediately.',
+    'Divide 300g cooked short-grain rice between two bowls. Spoon the beef and sauce mixture over the rice, making sure everyone gets some of the caramelised onions. Garnish with sesame seeds and sliced spring onions.'
+  ]
+},
+'tempura-udon': {
+  name: 'Tempura Udon',
+  type: 'lunch',
+  source: 'BBC Food',
+  sourceUrl: 'https://www.bbc.co.uk/food/recipes/tempura_udon_74830',
+  tags: ['japanese', 'udon', 'noodle soup', 'seafood'],
+  servings: 2,
+  ingredients: [
+    '200g frozen udon noodles',
+    '500ml dashi stock',
+    '3 tbsp soy sauce',
+    '1 tbsp mirin',
+    '6 large prawns, shell on',
+    '50g plain flour',
+    '100ml cold soda water',
+    'Vegetable oil for deep frying',
+    'Nori sheets and spring onions'
+  ],
+  method: [
+    'Make the tempura batter just before cooking: sift 50g plain flour into a bowl and add 100ml cold soda water. Mix with chopsticks or a fork until just combined — do not overmix, as a few lumps are fine and overmixing develops gluten which makes the batter heavy. The batter should be the consistency of thin cream.',
+    'Heat vegetable oil in a deep saucepan or wok to exactly 180°C — use a kitchen thermometer for accuracy. If you don\'t have one, drop a small piece of batter in: it should immediately rise to the surface and float, surrounded by a burst of bubbles.',
+    'Shell 6 large prawns, leaving the tails intact. devein them by making a shallow cut along the back and removing the dark thread with the tip of a knife. Pat completely dry with kitchen paper.',
+    'Dip each prawn into the tempura batter, letting any excess drip off, then carefully lower into the hot oil. Fry 3-4 prawns at a time — overcrowding drops the oil temperature and results in soggy tempura.',
+    'Fry for 2-3 minutes until the batter is pale golden and crisp, with large, lacy bubbles marking the surface. Remove with a slotted spoon and drain on a wire rack or kitchen paper. Repeat with remaining prawns.',
+    'While the prawns cook, warm 500ml dashi stock with 3 tbsp soy sauce and 1 tbsp mirin in a saucepan. Cook 200g frozen udon noodles in boiling water according to packet instructions, then drain.',
+    'Divide the hot noodles between two deep bowls and ladle the warm dashi broth over them. Place 3 tempura prawns on top of each bowl. Garnish with nori sheets (cut into small squares) and sliced spring onions.'
+  ]
+},
+'katsu-curry-rice': {
+  name: 'Japanese Katsu Curry Rice',
+  type: 'lunch',
+  source: 'BBC Food',
+  sourceUrl: 'https://www.bbc.co.uk/food/recipes/japanese_curry_66614',
+  tags: ['japanese', 'curry', 'rice', 'comfort'],
+  servings: 2,
+  ingredients: [
+    '2 chicken breasts',
+    '50g plain flour',
+    '1 egg, beaten',
+    '80g panko breadcrumbs',
+    '300g Japanese short-grain rice',
+    '1 onion, sliced',
+    '2 carrots, sliced',
+    '500ml chicken stock',
+    '3 tbsp Japanese curry roux blocks',
+    'Vegetable oil for frying'
+  ],
+  method: [
+    'Set up a breading station: spread 50g plain flour on a plate, beat 1 egg in a shallow bowl, and spread 80g panko breadcrumbs on a third plate. Season each lightly with salt. Make sure the flour coating is complete — any gaps will result in the coating peeling off during frying.',
+    'Pat 2 chicken breasts dry and, if thick, pound gently between sheets of cling film to an even 1.5cm thickness. Coat each breast in flour, then egg, then panko — pressing the breadcrumbs firmly onto the chicken at each stage to ensure they adhere.',
+    'Heat vegetable oil (about 2cm deep) in a large, heavy-based frying pan over a medium-high heat until a breadcrumb dropped in immediately sizzles and floats. Carefully place both breaded chicken breasts in the oil.',
+    'Deep or shallow fry for 4-5 minutes per side until the coating is a deep, rich golden brown and the chicken is cooked through — there should be no pink when you cut into the thickest part. Remove and drain on a wire rack.',
+    'While the chicken rests, heat a little oil in a separate pan over a medium heat. Sauté 1 sliced onion and 2 sliced carrots until softened — about 5 minutes. The onion should be translucent and lightly golden.',
+    'Add 500ml chicken stock to the vegetables and bring to a gentle simmer. Break 3 tbsp Japanese curry roux blocks into the liquid and stir continuously until completely dissolved — the roux will thicken the sauce dramatically.',
+    'Simmer the curry sauce, partially covered, for 15 minutes, stirring occasionally, until it has a smooth, velvety consistency. The sauce should coat the back of a spoon thickly. If too thick, add a little more stock.',
+    'Cook 300g Japanese short-grain rice in a saucepan or rice cooker — follow the packet instructions, but the rice should be sticky and fluffy, not dry or clumped together.',
+    'Slice the katsu chicken on a bias into thick strips about 1.5-2cm wide. Place a portion of rice in each bowl, arrange the sliced katsu on top, and ladle the hot curry sauce generously over and around the chicken. Serve immediately.'
+  ]
+},
+'japanese-curry': {
+  name: 'Japanese Vegetable Curry',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/japanese-vegetable-curry',
+  tags: ['japanese', 'curry', 'vegan', 'comfort'],
+  servings: 2,
+  ingredients: [
+    '1 onion, diced',
+    '2 carrots, sliced',
+    '1 potato, cubed',
+    '100g mushrooms',
+    '1 courgette, sliced',
+    '500ml vegetable stock',
+    '3 tbsp Japanese curry powder',
+    '1 tbsp plain flour',
+    '300g cooked short-grain rice',
+    '2 tbsp vegetable oil'
+  ],
+  method: [
+    'Heat 2 tbsp vegetable oil in a large, heavy-bottomed pan or casserole over a medium heat. Add 1 diced onion and cook, stirring occasionally, for 8-10 minutes until the onion is completely softened and turning pale golden at the edges.',
+    'Add 2 sliced carrots and 1 cubed potato. Stir to coat in the oil and onion, then cook for 5 minutes, stirring occasionally, until the carrots begin to soften at the edges and the potato has a light surface film.',
+    'Sprinkle 1 tbsp plain flour and 3 tbsp Japanese curry powder over the vegetables. Stir thoroughly for 2 minutes — the flour and curry powder will coat the vegetables and begin to toast slightly, deepening the flavour significantly.',
+    'Pour in 500ml vegetable stock gradually, stirring constantly to avoid lumps. Bring to a gentle simmer over medium heat, stirring regularly.',
+    'Add 100g mushrooms (quartered if large) and 1 sliced courgette. Stir everything together, cover partially, and simmer for 20 minutes until the vegetables are completely tender and the sauce has thickened to a rich, glossy consistency.',
+    'Taste and adjust the seasoning — Japanese curry should be mildly sweet with a warm, complex heat. If the flavour needs more punch, add a little more curry powder. If too spicy, add a small amount of sugar.',
+    'Divide 300g cooked short-grain rice between two deep bowls and ladle the curry generously over the top. Serve immediately — Japanese curry is a comforting, warming dish that is traditionally eaten with a spoon, directly from the bowl.'
+  ]
+},
+'shakshuka': {
+  name: 'Shakshuka',
+  type: 'lunch',
+  source: 'BBC Good Food',
+  sourceUrl: 'https://www.bbcgoodfood.com/recipes/shakshuka',
+  tags: ['middle-eastern', 'vegetarian', 'eggs', 'spicy', 'quick'],
+  servings: 2,
+  ingredients: [
+    '4 eggs',
+    '400g tinned tomatoes',
+    '1 onion, diced',
+    '1 red pepper, sliced',
+    '2 garlic cloves, minced',
+    '1 tsp cumin',
+    '1 tsp smoked paprika',
+    'Pinch of chilli flakes',
+    '2 tbsp olive oil',
+    'Flatbread to serve'
+  ],
+  method: [
+    'Heat 2 tbsp olive oil in a large, wide pan (a cast iron skillet is ideal) over a medium heat. Add 1 diced onion and 1 sliced red pepper. Cook for 8-10 minutes, stirring occasionally, until the vegetables are completely softened and the onion is turning golden at the edges.',
+    'Add 2 minced garlic cloves, 1 tsp ground cumin, 1 tsp smoked paprika, and a pinch of chilli flakes. Stir well and cook for 1-2 minutes until the spices are fragrant and toasty — this blooming step is essential for maximum flavour depth.',
+    'Pour in 400g canned chopped tomatoes, breaking them up with a wooden spoon. Bring to a gentle simmer and cook for 10 minutes, partially covered, until the sauce has thickened and the flavours have concentrated. Season to taste.',
+    'Make 4 evenly spaced wells in the sauce by pressing the back of a spoon firmly into the mixture. Crack 1 egg into each well, spacing them so the yolks don\'t touch.',
+    'Reduce the heat to medium-low, cover the pan with a lid or a sheet of foil, and cook for 5-7 minutes. Check by gently shaking the pan — the whites should be fully set and opaque, but the yolks should still jiggle when the pan is moved. If the whites are set but the pan is still on the heat, they\'re done.',
+    'Remove from the heat. Tear a few fresh coriander leaves over the surface — the heat from the pan will wilt them slightly and release their fragrance.',
+    'Serve immediately, straight from the pan at the table, with warm flatbreads for scooping. The key to shakshuka is eating it while the yolks are still runny and the sauce is bubbling hot — crack the yolks open and mix them into the sauce before eating.'
+  ]
+},
+'smoked-haddock-cola': {
+  name: 'Smoked Haddock in Colla',
+  type: 'lunch',
+  source: 'Rick Stein',
+  sourceUrl: 'https://www.bbc.com/food/recipes/smoked_haddock_in_colla_14076',
+  tags: ['british', 'fish', 'comfort', 'classic'],
+  servings: 2,
+  ingredients: [
+    '2 smoked haddock fillets',
+    '300ml fish stock',
+    '100ml double cream',
+    '1 onion, sliced',
+    '2 bay leaves',
+    '200g mashed potato',
+    'Butter for greasing',
+    'Chives and parsley'
+  ],
+  method: [
+    'Preheat the oven to 180°C (fan 160°C / gas mark 4). This gentle oven temperature is ideal for gently cooking the delicate smoked haddock without drying it out.',
+    'Butter a shallow oven dish generously — the butter prevents the fish from sticking and adds richness. Place 2 smoked haddock fillets in a single layer in the dish, skin-side down if they still have skin.',
+    'Add 2 bay leaves and arrange 1 sliced onion over the fish in an even layer. Pour 300ml fish stock and 100ml double cream over the top — the cream should come about halfway up the fillets.',
+    'Cover the dish tightly with a sheet of foil, creating a seal to trap the steam and gentle liquid braise. Place in the preheated oven and bake for 20 minutes.',
+    'After 20 minutes, remove the foil and carefully check if the fish is done: it should flake easily when pressed with a fork and the flesh should be opaque throughout with no translucent patches remaining.',
+    'If the fish needs more time, cover and return for another 5 minutes. When done, remove from the oven and let it rest for 2 minutes before serving.',
+    'Use a fish slice to carefully lift each haddock fillet onto two warm plates. Spoon the creamy onion and stock sauce from the dish over the fish — it should be rich, golden, and fragrant from the bay leaves.',
+    'Serve alongside 200g mashed potato (prepared by boiling and mashing with butter and a splash of milk) and scatter fresh chives and parsley over the fish. The mash soaks up the sauce beautifully.'
+  ]
+}
+};
+
+// ─── State ───────────────────────────────────────────────
+const DAYS = ['mon','tue','wed','thu','fri','sat','sun'];
+const DAY_LABELS = { mon:'Monday', tue:'Tuesday', wed:'Wednesday', thu:'Thursday', fri:'Friday', sat:'Saturday', sun:'Sunday' };
+const DAY_SHORT = { mon:'Mon', tue:'Tue', wed:'Wed', thu:'Thu', fri:'Fri', sat:'Sat', sun:'Sun' };
+const MEAL_ICONS = { breakfast: '🍳', lunch: '🥗' };
+const MEAL_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch' };
+
+let state = {
+  week: {}, staples: [], theme: 'auto', servings: 2, _checked: {}
+};
+let currentSlot = null;
+let currentFilter = 'all';
+
+// ─── Init ────────────────────────────────────────────────
+function init() {
+  load();
+  applyTheme();
+  renderDays();
+  renderStaples();
+  renderShopping();
+  updateWeekLabel();
+}
+
+function load() {
+  try {
+    const s = localStorage.getItem('mp_state');
+    if (s) state = { ...state, ...JSON.parse(s) };
+  } catch(e) {}
+}
+function save() {
+  localStorage.setItem('mp_state', JSON.stringify(state));
+}
+
+// ─── Theme ───────────────────────────────────────────────
+function applyTheme() {
+  const t = state.theme;
+  if (t === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else if (t === 'light') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    const m = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.toggleAttribute('data-theme', m);
+  }
+}
+function toggleTheme() {
+  state.theme = document.documentElement.hasAttribute('data-theme') ? 'light' : 'dark';
+  applyTheme();
+  save();
+}
+
+// ─── Nav ─────────────────────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  const copyBar = document.getElementById('copy-bar');
+  copyBar.style.display = tab === 'shopping' ? 'flex' : 'none';
+  if (tab === 'shopping') renderShopping();
+}
+
+// ─── Week label ──────────────────────────────────────────
+function updateWeekLabel() {
+  const now = new Date();
+  const monday = new Date(now);
+  const day = now.getDay();
+  const diff = (day === 0) ? -6 : 1 - day;
+  monday.setDate(now.getDate() + diff);
+  document.getElementById('week-label').textContent = new Intl.DateTimeFormat('en-GB', { day:'numeric', month:'short' }).format(monday);
+}
+
+// ─── Render days ─────────────────────────────────────────
+function renderDays() {
+  const now = new Date();
+  const monday = new Date(now);
+  const day = now.getDay();
+  const diff = (day === 0) ? -6 : 1 - day;
+  monday.setDate(now.getDate() + diff);
+
+  document.getElementById('day-cards').innerHTML = DAYS.map((d, i) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
+    const dateStr = date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    const bfast = state.week[d] ? state.week[d].breakfast : null;
+    const lunch = state.week[d] ? state.week[d].lunch : null;
+    const bfastRecipe = bfast ? RECIPES[bfast] : null;
+    const lunchRecipe = lunch ? RECIPES[lunch] : null;
+
+    return `
+      <div class="day-card">
+        <div class="day-header">
+          <span class="day-name">${DAY_LABELS[d]}</span>
+          <span class="day-date">${dateStr}</span>
+        </div>
+        <div class="day-meals">
+          <div class="meal-slot ${bfastRecipe ? 'filled' : ''}" onclick="${bfastRecipe ? `showRecipeDetail('${bfast}')` : `handleSlotClick('${d}','breakfast')`}">
+            <div class="meal-slot-icon">${bfastRecipe ? '🍳' : '+'}</div>
+            <div class="meal-slot-info">
+              <div class="meal-slot-type">Breakfast</div>
+              ${bfastRecipe ? `<div class="meal-slot-name">${bfastRecipe.name}</div>` : `<div class="meal-slot-empty">Tap to add</div>`}
+            </div>
+            ${bfastRecipe
+              ? `<button class="meal-slot-remove" onclick="event.stopPropagation(); clearSlot('${d}','breakfast')">×</button>`
+              : `<div class="meal-slot-arrow">+</div>`}
+          </div>
+          <div class="meal-slot ${lunchRecipe ? 'filled' : ''}" onclick="${lunchRecipe ? `showRecipeDetail('${lunch}')` : `handleSlotClick('${d}','lunch')`}">
+            <div class="meal-slot-icon">${lunchRecipe ? '🥗' : '+'}</div>
+            <div class="meal-slot-info">
+              <div class="meal-slot-type">Lunch</div>
+              ${lunchRecipe ? `<div class="meal-slot-name">${lunchRecipe.name}</div>` : `<div class="meal-slot-empty">Tap to add</div>`}
+            </div>
+            ${lunchRecipe
+              ? `<button class="meal-slot-remove" onclick="event.stopPropagation(); clearSlot('${d}','lunch')">×</button>`
+              : `<div class="meal-slot-arrow">+</div>`}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ─── Recipe selector ─────────────────────────────────────
+function handleSlotClick(day, type) {
+  currentSlot = { day, type };
+  document.getElementById('modal-title').textContent = `${DAY_LABELS[day]} — ${MEAL_LABELS[type]}`;
+  document.getElementById('recipe-search').value = '';
+  setFilter('all');
+  renderRecipeList('');
+  document.getElementById('recipe-modal').classList.add('open');
+}
+
+function closeRecipeModal() {
+  document.getElementById('recipe-modal').classList.remove('open');
+  currentSlot = null;
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  filterRecipes();
+}
+
+function filterRecipes() {
+  renderRecipeList(document.getElementById('recipe-search').value.toLowerCase());
+}
+
+function renderRecipeList(query) {
+  const list = document.getElementById('recipe-list');
+  const type = currentSlot ? currentSlot.type : 'breakfast';
+  const filtered = Object.entries(RECIPES).filter(([id, r]) => {
+    if (r.type !== type) return false;
+    if (currentFilter !== 'all' && !r.tags.includes(currentFilter)) return false;
+    if (query && !r.name.toLowerCase().includes(query) && !r.tags.some(t => t.includes(query))) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<p style="color:var(--text-muted);font-size:0.9rem;text-align:center;padding:20px">No recipes found</p>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(([id, r]) => `
+    <div class="recipe-card" onclick="selectRecipe('${id}')">
+      <h3>${r.name}</h3>
+      <p>${r.source} · ${r.servings} servings</p>
+      <div class="recipe-tags">${r.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+function selectRecipe(id) {
+  if (!currentSlot) return;
+  const { day, type } = currentSlot;
+  if (!state.week[day]) state.week[day] = {};
+  state.week[day][type] = id;
+  save();
+  closeRecipeModal();
+  renderDays();
+}
+
+function clearSlot(day, type) {
+  if (!state.week[day]) return;
+  delete state.week[day][type];
+  save();
+  renderDays();
+}
+
+// ─── Recipe detail ───────────────────────────────────────
+function showRecipeDetail(id) {
+  const r = RECIPES[id];
+  if (!r) return;
+  document.getElementById('recipe-detail-content').innerHTML = `
+    <button onclick="closeDetailModal()" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-hover);color:var(--text-muted);font-size:1.2rem;cursor:pointer">×</button>
+    <h2 style="font-size:1.3rem;color:var(--primary);margin-bottom:8px">${r.name}</h2>
+    <div class="detail-meta">
+      <span>Source: <a href="${r.sourceUrl}" target="_blank" rel="noopener noreferrer">${r.source}</a></span>
+      <span>${r.servings} servings</span>
+    </div>
+    <div class="recipe-tags">${r.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+    <div class="detail-ingredients">
+      <h4>Ingredients</h4>
+      <ul>${r.ingredients.map(i => `<li>${i}</li>`).join('')}</ul>
+    </div>
+    <div class="detail-method">
+      <h4>Method</h4>
+      <ol>${r.method.map(s => `<li>${s}</li>`).join('')}</ol>
+    </div>
+  `;
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function closeDetailModal() {
+  document.getElementById('detail-modal').classList.remove('open');
+}
+
+// ─── Shopping ─────────────────────────────────────────────
+const AISLES = {
+  'Bakery': ['bread','sourdough','baguette','roll','bagel','brioche','flatbread','tortilla'],
+  'Meat & Fish': ['chicken','bacon','sausage','prawn','salmon','cod','crab','pork','egg'],
+  'Dairy': ['milk','yogurt','butter','cheese','mozzarella','feta','cream','parmesan'],
+  'Fresh Produce': ['tomato','avocado','cucumber','pepper','onion','garlic','carrot','lettuce','celery','basil','coriander','lemon','lime','apple','banana','berries','grapes','walnuts','seeds','samphire','fennel','ginger','thyme','dill'],
+  'Pantry': ['oats','flour','rice','pasta','noodles','lentils','chickpeas','beans','edamame','stock','honey','sugar','oil','olive oil','sesame oil','soy sauce','vinegar','harissa','curry powder','cumin','paprika','chilli','salt','peanut butter','houmous','pickle','baked beans','sun-dried','capers','olives','balsamic'],
+  'Frozen': ['frozen']
+};
+
+function getShoppingItems() {
+  const items = {};
+  const servings = state.servings || 2;
+  for (const day of DAYS) {
+    const plan = state.week[day];
+    if (!plan) continue;
+    for (const type of ['breakfast','lunch']) {
+      const rid = plan[type];
+      if (!rid) continue;
+      const r = RECIPES[rid];
+      if (!r || !r.ingredients) continue;
+      const scale = servings / r.servings;
+      for (const ing of r.ingredients) {
+        const m = ing.match(/^(\d+(?:[.,]\d+)?\s*(?:g|ml|kg|tbsp|tsp|oz|lb|cm|mm)?)\s*/);
+        const qty = m ? parseFloat(m[1]) * scale : 1;
+        let name = m ? ing.slice(m[0].length).trim() : ing;
+        name = name.replace(/^[\s\-\u2013\u2014\,\.]+/, '').trim();
+        if (!name) continue;
+        if (items[name]) items[name].qty += qty;
+        else items[name] = { qty, checked: !!state._checked[name] };
+      }
+    }
+  }
+  for (const s of state.staples) {
+    const n = s.trim();
+    if (!items[n]) items[n] = { qty: 1, checked: !!state._checked[n] };
+  }
+  return items;
+}
+
+function getAisle(name) {
+  const l = name.toLowerCase();
+  for (const [a, ks] of Object.entries(AISLES)) {
+    if (ks.some(k => l.includes(k))) return a;
+  }
+  return 'Other';
+}
+
+function renderShopping() {
+  const list = document.getElementById('shopping-list');
+  const items = getShoppingItems();
+  const sorted = Object.entries(items).sort(([a],[b]) => getAisle(a).localeCompare(getAisle(b)));
+
+  if (sorted.length === 0) {
+    list.innerHTML = '<div class="shopping-empty">No meals planned yet. Add some meals to generate your shopping list.</div>';
+    return;
+  }
+
+  const groups = {};
+  for (const [n, d] of sorted) {
+    const a = getAisle(n);
+    if (!groups[a]) groups[a] = [];
+    groups[a].push([n, d]);
+  }
+
+  list.innerHTML = Object.entries(groups).map(([aisle, items]) => `
+    <div class="aisle-group">
+      <div class="aisle-title">${aisle}</div>
+      ${items.map(([n, d]) => `
+        <div class="shopping-list-item ${d.checked ? 'checked' : ''}" onclick="toggleItem('${n.replace(/'/g,"\\'")}')">
+          <input type="checkbox" ${d.checked ? 'checked' : ''} onclick="event.stopPropagation();toggleItem('${n.replace(/'/g,"\\'")}')">
+          <span>${n}</span>
+          <span class="qty">×${d.qty % 1 === 0 ? d.qty : d.qty.toFixed(1)}</span>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function toggleItem(name) {
+  state._checked[name] = !state._checked[name];
+  save();
+  renderShopping();
+}
+
+function clearChecked() {
+  state._checked = {};
+  save();
+  renderShopping();
+}
+
+function copyShoppingList() {
+  const items = getShoppingItems();
+  const lines = [];
+  const groups = {};
+  for (const [n, d] of Object.entries(items)) {
+    const a = getAisle(n);
+    if (!groups[a]) groups[a] = [];
+    groups[a].push(`${d.checked ? '✓' : '○'} ${n} ×${d.qty % 1 === 0 ? d.qty : d.qty.toFixed(1)}`);
+  }
+  for (const [a, items] of Object.entries(groups)) {
+    lines.push(`${a}:`);
+    lines.push(...items);
+    lines.push('');
+  }
+  const text = lines.join('\n').trim();
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Shopping list copied!');
+    }).catch(() => {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('Shopping list copied!');
+  } catch(e) {
+    showToast('Copy failed — try selecting text manually');
+  }
+  document.body.removeChild(ta);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── Staples ──────────────────────────────────────────────
+function renderStaples() {
+  const list = document.getElementById('staples-list');
+  list.innerHTML = state.staples.map(s => `
+    <span class="staple-tag" onclick="removeStaple('${s.replace(/'/g,"\\'")}')">${s} ×</span>
+  `).join('');
+}
+function addStaple() {
+  const v = document.getElementById('staple-input').value.trim();
+  if (!v || state.staples.includes(v)) return;
+  state.staples.push(v);
+  save();
+  document.getElementById('staple-input').value = '';
+  renderStaples();
+  renderShopping();
+}
+function removeStaple(name) {
+  state.staples = state.staples.filter(s => s !== name);
+  save();
+  renderStaples();
+  renderShopping();
+}
+
+// ─── Boot ────────────────────────────────────────────────
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('open');
+  }
+});
+
+init();
+</script>
+</body>
+</html>
